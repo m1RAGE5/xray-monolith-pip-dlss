@@ -3,7 +3,11 @@
 void CRenderTarget::phase_occq()
 {
 	if (!RImplementation.o.dx10_msaa)
+<<<<<<< HEAD
 		u_setrt(RenderScreenWidth(), RenderScreenHeight(), HW.pBaseRT,NULL,NULL, dlss::SceneDepth());
+=======
+		u_setrt(RenderScreenWidth(), RenderScreenHeight(), HW.pBaseRT,NULL,NULL, u_SceneDepth());
+>>>>>>> 3e5d03821e114f475a3a68a94a67ca9d5c432dbc
 	else
 		u_setrt(RenderScreenWidth(), RenderScreenHeight(),NULL,NULL,NULL, rt_MSAADepth->pZRT);
 	RCache.set_Shader(s_occq);

@@ -459,6 +459,17 @@ public:
 	void u_setrt(const ref_rt& _1, const ref_rt& _2, ID3DDepthStencilView* zb);
 	void u_setrt(u32 W, u32 H, ID3DRenderTargetView* _1, ID3DRenderTargetView* _2, ID3DRenderTargetView* _3,
 	             ID3DDepthStencilView* zb);
+<<<<<<< HEAD
+=======
+	// DLSS-aware depth for the main viewport ONLY: dlss::SceneDepth() is global and always
+	// returns the main-sized DLSS depth; an SVP pass must bind its own (differently sized)
+	// depth or D3D drops the geometry and the scope renders white
+	ID3DDepthStencilView* u_SceneDepth();
+	// DLSS-aware depth for the main viewport ONLY: dlss::SceneDepth() is global and always
+	// returns the main-sized DLSS depth; an SVP pass must bind its own (differently sized)
+	// depth or D3D drops the geometry and the scope renders white
+	ID3DDepthStencilView* u_SceneDepth();
+>>>>>>> 3e5d03821e114f475a3a68a94a67ca9d5c432dbc
 	void u_calc_tc_noise(Fvector2& p0, Fvector2& p1);
 	void u_calc_tc_duality_ss(Fvector2& r0, Fvector2& r1, Fvector2& l0, Fvector2& l1);
 	BOOL u_need_PP();

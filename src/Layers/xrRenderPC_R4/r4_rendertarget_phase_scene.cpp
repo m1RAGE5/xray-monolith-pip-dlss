@@ -7,9 +7,15 @@ void CRenderTarget::phase_scene_prepare()
 
 		//	TODO: DX10: Check if we need to set RT here.
 		if (!RImplementation.o.dx10_msaa)
+<<<<<<< HEAD
 			u_setrt(RenderScreenWidth(), RenderScreenHeight(), rt_Position->pRT,NULL,NULL, dlss::SceneDepth());
 		else
 			u_setrt(RenderScreenWidth(), RenderScreenHeight(), rt_Position->pRT,NULL,NULL, rt_MSAADepth->pZRT);
+=======
+			u_setrt(Device.dwWidth, Device.dwHeight, rt_Position->pRT,NULL,NULL, u_SceneDepth());
+		else
+			u_setrt(Device.dwWidth, Device.dwHeight, rt_Position->pRT,NULL,NULL, rt_MSAADepth->pZRT);
+>>>>>>> 3e5d03821e114f475a3a68a94a67ca9d5c432dbc
 
 		FLOAT ColorRGBA[4] = {0.0f, 0.0f, 0.0f, 0.0f};
 		HW.pContext->ClearRenderTargetView(rt_Position->pRT, ColorRGBA);
@@ -19,11 +25,19 @@ void CRenderTarget::phase_scene_prepare()
 		//--DSR-- HeatVision_end
 
 		if (!RImplementation.o.dx10_msaa)
+<<<<<<< HEAD
 			HW.pContext->ClearDepthStencilView(dlss::SceneDepth(), D3D_CLEAR_DEPTH | D3D_CLEAR_STENCIL, 1.0f, 0);
 		else
 		{
 			HW.pContext->ClearDepthStencilView(rt_MSAADepth->pZRT, D3D_CLEAR_DEPTH | D3D_CLEAR_STENCIL, 1.0f, 0);
 			HW.pContext->ClearDepthStencilView(dlss::SceneDepth(), D3D_CLEAR_DEPTH | D3D_CLEAR_STENCIL, 1.0f, 0);
+=======
+			HW.pContext->ClearDepthStencilView(u_SceneDepth(), D3D_CLEAR_DEPTH | D3D_CLEAR_STENCIL, 1.0f, 0);
+		else
+		{
+			HW.pContext->ClearDepthStencilView(rt_MSAADepth->pZRT, D3D_CLEAR_DEPTH | D3D_CLEAR_STENCIL, 1.0f, 0);
+			HW.pContext->ClearDepthStencilView(u_SceneDepth(), D3D_CLEAR_DEPTH | D3D_CLEAR_STENCIL, 1.0f, 0);
+>>>>>>> 3e5d03821e114f475a3a68a94a67ca9d5c432dbc
 		}
 
 	//	Igor: for volumetric lights
@@ -37,7 +51,11 @@ void CRenderTarget::phase_scene_begin()
 {
 	SSManager.SetMaxAnisotropy(ps_r__tf_Anisotropic);	
 	
+<<<<<<< HEAD
 	ID3DDepthStencilView* pZB = dlss::SceneDepth();
+=======
+	ID3DDepthStencilView* pZB = u_SceneDepth();
+>>>>>>> 3e5d03821e114f475a3a68a94a67ca9d5c432dbc
 
 	if (RImplementation.o.dx10_msaa)
 		pZB = rt_MSAADepth->pZRT;

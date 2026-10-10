@@ -417,7 +417,11 @@ void CRender::renderGBuffer(bool clearGraph)
 
     if (RImplementation.o.ssfx_motionvectors)
     {
+<<<<<<< HEAD
         Target->u_setrt(RenderScreenWidth(), RenderScreenHeight(), 0, 0, Target->rt_ssfx_motion_vectors->pRT, 0);
+=======
+        Target->u_setrt(Device.dwWidth, Device.dwHeight, 0, 0, Target->rt_ssfx_motion_vectors->pRT, 0);
+>>>>>>> 3e5d03821e114f475a3a68a94a67ca9d5c432dbc
 
         FLOAT ColorRGBA[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
         HW.pContext->ClearRenderTargetView(Target->rt_ssfx_motion_vectors->pRT, ColorRGBA);
@@ -433,7 +437,11 @@ void CRender::renderGBuffer(bool clearGraph)
 
         if (ps_r2_ls_flags.test(R2FLAG_TERRAIN_PREPASS))
         {
+<<<<<<< HEAD
                 Target->u_setrt(RenderScreenWidth(), RenderScreenHeight(), NULL, NULL, NULL, !RImplementation.o.dx10_msaa ? dlss::SceneDepth() : Target->rt_MSAADepth->pZRT);
+=======
+                Target->u_setrt(Device.dwWidth, Device.dwHeight, NULL, NULL, NULL, !RImplementation.o.dx10_msaa ? Target->u_SceneDepth() : Target->rt_MSAADepth->pZRT);
+>>>>>>> 3e5d03821e114f475a3a68a94a67ca9d5c432dbc
         }
 
         //******* Main render :: PART-0 -- first

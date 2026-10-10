@@ -3,7 +3,11 @@
 void CRenderTarget::phase_rain()
 {
 	if (!RImplementation.o.dx10_msaa)
+<<<<<<< HEAD
 		u_setrt(rt_Color,NULL,NULL, dlss::SceneDepth());
+=======
+		u_setrt(rt_Color,NULL,NULL, u_SceneDepth());
+>>>>>>> 3e5d03821e114f475a3a68a94a67ca9d5c432dbc
 	else
 		u_setrt(rt_Color,NULL,NULL, rt_MSAADepth->pZRT);
 	//u_setrt	(rt_Normal,NULL,NULL,HW.pBaseZB);
