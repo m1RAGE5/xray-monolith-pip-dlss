@@ -1,103 +1,104 @@
-# STALKER Anomaly Modded Exes — PiP + DLSS/FSR3 (форк X-Ray Monolith MT)
+# STALKER Anomaly Modded Exes — PiP Scopes + DLSS/FSR3 (X-Ray Monolith MT fork)
 
-Этот репозиторий — **объединённая сборка modded exes** для S.T.A.L.K.E.R. Anomaly 1.5.3 / GAMMA,
-собранная из трёх веток развития движка X-Ray Monolith:
+This repository is a **combined modded exes build** for S.T.A.L.K.E.R. Anomaly 1.5.3 / GAMMA,
+merged from three X-Ray Monolith development branches:
 
-| Компонент | Источник | Что даёт |
+| Component | Source | What it gives you |
 |---|---|---|
-| База — X-Ray Monolith **MT** | [themrdemonized/xray-monolith](https://github.com/themrdemonized/xray-monolith), ветка `all-in-one-vs2022-wpo-mt` (на основе релиза 2026.9.12) | Все фичи modded exes + MT-оптимизации + **Shader Bus** (нужен для Glossy Puddles и других новых шейдерных модов) |
-| **PiP-прицелы** (objective-camera) | [asuparabekon/xray-monolith-bodycam](https://github.com/asuparabekon/xray-monolith-bodycam), ветка `bodycam-mt` | Настоящая картинка-в-картинке: второй рендер мира через объектив прицела, физика оптики, туннелирование, параллакс, модуль bodycam-камеры |
-| **Нативный DLSS / FSR 3.1** | [brodrigz/xray-monolith](https://github.com/brodrigz/xray-monolith), релиз 1.0.0 | Апскейлинг DLSS и FSR3 нативно в DX11, пресеты качества, CAS-шарпенинг, нативное разрешение экранов КПК/носимых устройств |
+| Base — X-Ray Monolith **MT** | [themrdemonized/xray-monolith](https://github.com/themrdemonized/xray-monolith), branch `all-in-one-vs2022-wpo-mt` (based on the 2026.9.12 release) | All modded exes features + MT optimizations + **Shader Bus** (required for Glossy Puddles and other new shader mods) |
+| **PiP scopes** (objective-camera) | [asuparabekon/xray-monolith-bodycam](https://github.com/asuparabekon/xray-monolith-bodycam), branch `bodycam-mt` | True picture-in-picture: a second world render through the scope's objective lens, optics physics, tunneling, parallax, bodycam camera module |
+| **Native DLSS / FSR 3.1** | [brodrigz/xray-monolith](https://github.com/brodrigz/xray-monolith), release 1.0.0 | DLSS and FSR3 upscaling natively in DX11, quality presets, CAS sharpening, native-resolution PDA/wearable screens |
 
 > [!NOTE]
-> Сборка основана на **MT-версии** движка (то, что в официальных релизах называется MT-TEST) —
-> обе исходные модификации (bodycam и brodrigz) тоже базируются на MT-ветке. В главном меню и
-> логе сборка обозначается как MT-TEST.
+> The build is based on the **MT version** of the engine (what official releases call MT-TEST) —
+> both source modifications (bodycam and brodrigz) are themselves based on the MT branch.
+> In the main menu and build log it is labeled as MT-TEST.
 
-## Что внутри
+## What's Inside
 
-* **Picture-in-Picture прицелы** — вместо шейдерного «зума» рендерится второй вид мира из точки
-  объектива прицела:
-  * отдельная камера входного зрачка, физическое моделирование eye relief, exit pupil, объективного диаметра;
-  * туннелирование и виньетка по реальному выравниванию глаза, а не фиксированный оверлей;
-  * типизированные профили оптики (LPVO, коллиматоры, «восьмёрки», ночники), weapon-relative
-    позиционирование сетки при движении оружия в deadzone;
-  * настройки через MCM-меню и ImGui, `bodycam_user.ltx` для пользовательских пресетов.
-* **Нативный DLSS / FSR 3.1** (от brodrigz):
-  * DLSS (NVIDIA NGX) и FSR 3.1 напрямую в DX11, без инжекторов и DX12-моста;
-  * пресеты качества и выбор DLSS-пресета, CAS-шарпенинг;
-  * экраны КПК и носимых устройств рендерятся в нативном разрешении после апскейла;
-  * **требует SSS23** (Screen Space Shaders) для буфера motion vectors.
-* **Shader Bus** (от upstream 2026.9.12) — именованные lanes для обмена скрипт ↔ шейдер,
-  необходим для **Glossy Puddles**. Проверка: `shader_bus.version()` возвращает `2`.
-* Все прочие фичи modded exes и MT-ветки (см. README ниже).
+* **Picture-in-Picture scopes** — instead of a shader "zoom", a second view of the world is
+  rendered from the scope's objective lens position:
+  * a dedicated entrance-pupil camera with physically modeled eye relief, exit pupil and objective diameter;
+  * tunneling and vignetting driven by actual eye alignment instead of a fixed overlay;
+  * typed optics profiles (LPVO, reflex sights, "figure-eight" scopes, night vision devices),
+    weapon-relative reticle positioning as the weapon moves in the deadzone;
+  * configuration via an MCM menu and ImGui, `bodycam_user.ltx` for user presets.
+* **Native DLSS / FSR 3.1** (from brodrigz):
+  * DLSS (NVIDIA NGX) and FSR 3.1 directly in DX11, no injectors and no DX12 bridge;
+  * quality presets and DLSS preset selection, CAS sharpening;
+  * PDA and wearable device screens rendered at native resolution after upscaling;
+  * **requires SSS23** (Screen Space Shaders) for the motion vectors buffer.
+* **Shader Bus** (from upstream 2026.9.12) — named lanes for script ↔ shader communication,
+  required for **Glossy Puddles**. Check: `shader_bus.version()` returns `2`.
+* All other modded exes and MT-branch features (see the README below).
 
-## Сборка
+## Building
 
-### Вариант 1 — GitHub Actions (рекомендуется)
+### Option 1 — GitHub Actions (recommended)
 
-1. Сделайте форк этого репозитория.
-2. Откройте вкладку **Actions** → выберите workflow **MSBuild** → **Run workflow**
-   (или просто запушьте коммит в `main`).
-3. Дождитесь завершения сборки (8 конфигураций, ~40–60 минут).
-4. Скачайте готовые артефакты/релиз: `STALKER-Anomaly-modded-exes-PiP-DLSS-MT_<дата>.zip`.
+1. Fork this repository.
+2. Open the **Actions** tab → select the **MSBuild** workflow → **Run workflow**
+   (or simply push a commit to `main`).
+3. Wait for the build to finish (8 configurations, ~40–60 minutes).
+4. Download the ready artifacts/release: `STALKER-Anomaly-modded-exes-PiP-DLSS-MT_<date>.zip`.
 
-В релиз входят все 8 конфигураций: `DX11`, `DX10`, `DX9`, `DX8` и их `-AVX` варианты.
+The release includes all 8 configurations: `DX11`, `DX10`, `DX9`, `DX8` and their `-AVX` variants.
 
-### Вариант 2 — локально (Visual Studio 2022)
+### Option 2 — locally (Visual Studio 2022)
 
-1. Установите Visual Studio 2022 с рабочей нагрузкой «Разработка классических приложений C++»
-   (компоненты MSVC v143, Windows 10/11 SDK).
-2. Клонируйте репозиторий **с сабмодулями**:
+1. Install Visual Studio 2022 with the "Desktop development with C++" workload
+   (MSVC v143 components, Windows 10/11 SDK).
+2. Clone the repository **with submodules**:
    ```
    git clone --recurse-submodules <url>
    ```
-3. Откройте `src/engine-vs2022.sln`.
-4. Выберите конфигурацию `DX11-AVX | x64` (или любую другую) и соберите.
-5. Готовые exe появятся в `_build/_game/bin_dbg/`.
+3. Open `src/engine-vs2022.sln`.
+4. Select the `DX11-AVX | x64` configuration (or any other) and build.
+5. The resulting exes appear in `_build/_game/bin_dbg/`.
 
-Для упаковки gamedata используйте `compressor/! compress_gamedata.cmd` —
-получится `00_modded_exes_gamedata.db0` (скрипты/шейдеры/конфиги PiP).
+To pack the gamedata, use `compressor/! compress_gamedata.cmd` —
+this produces `00_modded_exes_gamedata.db0` (PiP scripts/shaders/configs).
 
-## Установка (GAMMA)
+## Installation (GAMMA)
 
-1. Скачайте или соберите архив релиза.
-2. Скопируйте содержимое `bin/` в корень игры Anomaly (заменяя файлы).
-3. Скопируйте `db/mods/00_modded_exes_gamedata.db0` в `<игра>/db/mods/`.
-4. **Удалите кэш шейдеров** в лаунчере перед первым запуском (один раз).
-5. Настройки PiP-прицелов и Bodycam: MCM-меню в настройках игры + ImGui-панель.
-6. Для DLSS/FSR3 (опционально):
-   * установите **SSS Update 23+** (нужны его motion vectors);
-   * в настройках видео выключите MSAA и TAA от SSS;
-   * включите DLSS/FSR3 в меню видео;
-   * положите `nvngx_dlss.dll` соответствующей версии рядом с игрой (см. релизы NVIDIA DLSS).
+1. Download or build the release archive.
+2. Copy the contents of `bin/` into the Anomaly game root (replacing files).
+3. Copy `db/mods/00_modded_exes_gamedata.db0` into `<game>/db/mods/`.
+4. **Delete the shader cache** in the launcher before the first launch (one time).
+5. PiP scope and Bodycam settings: the MCM menu in the game settings + the ImGui panel.
+6. For DLSS/FSR3 (optional):
+   * install **SSS Update 23+** (its motion vectors are required);
+   * in the video settings, disable MSAA and SSS TAA;
+   * enable DLSS/FSR3 in the video menu;
+   * place the matching `nvngx_dlss.dll` version next to the game (see NVIDIA DLSS releases).
 
 > [!IMPORTANT]
-> exe, gamedata-архив и сторонние моды должны быть из согласованных ревизий. Смешение версий
-> может привести к откату прицелов на легаси-шейдерный путь или некорректной работе оптики.
+> The exe, the gamedata archive and third-party mods must come from matching revisions.
+> Mixing versions may cause scopes to fall back to the legacy shader path or break optics behavior.
 
-## Известные ограничения
+## Known Limitations
 
-* Ночные приборы/гемк-оверлеи в **изображении прицела** не применяются, когда одновременно
-  включён DLSS основного вида (в основном виде NVG работают как обычно). Это следствие того,
-  что DLSS рендерит оверлеи в пост-фазе нативного разрешения, а SVP-проход её пропускает.
-* DLSS-SR внутри самой картинки прицела — контракт заготовлен (`SvpDlss.h`, команда
-  `r__svp_dlss`), но реальная оценка не реализована: прицел рендерится в render-extent и
-  масштабируется линзой.
-* MT-версия: полный список известных проблем MT-TEST — в README ниже.
+* Night vision / game overlays are not applied **inside the scope image** when DLSS is enabled
+  for the main view at the same time (in the main view, NVG works as usual). This is a
+  consequence of DLSS rendering overlays in the native-resolution post phase, which the
+  SVP pass skips.
+* DLSS-SR inside the scope image itself — the contract is stubbed (`SvpDlss.h`, the
+  `r__svp_dlss` command), but the actual evaluation is not implemented: the scope is rendered
+  at render-extent and scaled by the lens.
+* MT version: the full list of known MT-TEST issues is in the README below.
 
-## Технические детали слияния
+## Merge Technical Details
 
-База: `origin/all-in-one-vs2022-wpo-mt` (7b79d2be). Поверх смержены:
-* `brodrigz/all-in-one-vs2022-wpo-mt` (00093f65) — 12 коммитов DLSS/FSR3, вошли без конфликтов;
-* `asuparabekon/xray-monolith-bodycam` `bodycam-mt` (2c4420b6) — 10 коммитов PiP/Bodycam,
-  разрешены конфликты в 38 файлах (рендер, UI, vcxproj), ключевые решения:
-  * структура `renderGBuffer`/`renderSceneLighting` (SVP-проходы) сохранена, поверх перенесены
-    DLSS-гейты (`dlss::Configured()/Active()/SceneDepth()/BeginScene()/EndScene()`);
-  * размеры main-таргета `CRenderTarget` — DLSS-aware (`dlss::RenderWidth/Height()`),
-    SVP-таргет — собственной кратности;
-  * `PIX_EVENT_C`-маркеры upstream + `svp_stats`-тайминги bodycam совмещены;
-  * нативный UI (PDA/носимые экраны) рендерится с условием `hasNativeHudAttachments` в
-    едином месте (конец deferred-прохода), чтобы не дублировать отрисовку;
-  * UI-скроллинг вкладок взят из upstream (более новая реализация), кастомный UI-клиппинг
-    оверлея прицела (`SetHitClip`, `HasCustomClip`) — из bodycam.
+Base: `origin/all-in-one-vs2022-wpo-mt` (7b79d2be). Merged on top:
+* `brodrigz/all-in-one-vs2022-wpo-mt` (00093f65) — 12 DLSS/FSR3 commits, merged cleanly;
+* `asuparabekon/xray-monolith-bodycam` `bodycam-mt` (2c4420b6) — 10 PiP/Bodycam commits,
+  conflicts resolved in 38 files (render, UI, vcxproj), key decisions:
+  * the `renderGBuffer`/`renderSceneLighting` structure (SVP passes) was kept, with DLSS gates
+    (`dlss::Configured()/Active()/SceneDepth()/BeginScene()/EndScene()`) ported on top;
+  * `CRenderTarget` main-target dimensions are DLSS-aware (`dlss::RenderWidth/Height()`),
+    the SVP target uses its own scale factor;
+  * upstream `PIX_EVENT_C` markers + bodycam `svp_stats` timings combined;
+  * native UI (PDA/wearable screens) renders under the `hasNativeHudAttachments` condition in
+    a single place (the end of the deferred pass) to avoid drawing twice;
+  * UI tab scrolling taken from upstream (the newer implementation), the scope overlay custom
+    UI clipping (`SetHitClip`, `HasCustomClip`) — from bodycam.

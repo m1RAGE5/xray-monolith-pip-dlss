@@ -2809,6 +2809,7 @@
     <ClCompile Include="shader_bus_script.cpp">
       <PrecompiledHeaderFile>pch_script.h</PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile>$(IntDir)$(ProjectName)_script.pch</PrecompiledHeaderOutputFile>
+    </ClCompile>
     <ClCompile Include="svp_optic_config_script.cpp">
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
