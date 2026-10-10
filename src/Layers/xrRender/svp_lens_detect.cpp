@@ -78,6 +78,11 @@ static bool svp_name_is_lens(LPCSTR n)
 
 static inline svp_v3 svp_from(const Fvector& v) { return { v.x, v.y, v.z }; }
 
+#endif // USE_DX10 || USE_DX11
+
+// compiled in every renderer: svp_hud_latch.cpp (SVP_MeshVertsWorld) links against it
+// from R1/R2/R3 builds too, the body only reads skeleton vertex data (bone.h types)
+
 // append each dedup vertex as its bind-pose model position with the global dominant bone id
 // the stored bone id is a global skeleton id, no palette remap (skinning indexes LL_GetTransform_R by it)
 void CSkeletonX::SVP_GatherVerts(xr_vector<Fvector>& positions, xr_vector<u16>& bones)
@@ -130,8 +135,6 @@ void CSkeletonX::SVP_GatherVerts(xr_vector<Fvector>& positions, xr_vector<u16>& 
 		}
 	}
 }
-
-#endif // USE_DX10 || USE_DX11
 
 bool CKinematics::GetLensDetection(SLensDetection& out)
 {
