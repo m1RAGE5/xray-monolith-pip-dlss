@@ -178,7 +178,7 @@ jobs:
         files: |
           *.zip
           pdb/*.zip
-          dlss-binaries-GAMMA-compatibility-patch-pip.zip
+        overwrite_files: true
         tag_name: "${{steps.datetime.outputs.today}}-pip-dlss"
         name: "2026.9.12 DLSS/FSR3 MT + Immersive Bodycam"
         body: |
