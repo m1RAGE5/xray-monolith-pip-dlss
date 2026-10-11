@@ -46,8 +46,16 @@ const char* BackendReason(const char* fallback) { return backendError[0] ? backe
 void ResetHistory() { backend.ResetHistory(); fsrBackend.ResetHistory(); }
 }
 
-unsigned RenderScreenWidth() { return inScene ? dlss::RenderWidth() : Device.dwWidth; }
-unsigned RenderScreenHeight() { return inScene ? dlss::RenderHeight() : Device.dwHeight; }
+// The upscaler render size belongs to the MAIN viewport only. While the SVP (scope)
+// pass is bound, CRenderTarget::SetActive() retargets Device.dwWidth/Height to the
+// small square SVP target, and every screen-size consumer (deferred combine quads,
+// pos_decompress shader constants, volumetric lights, rain, PP chains) must read
+// those per-viewport dims - exactly what the engine did with Device.dwWidth before
+// the DLSS integration. Without this gate the SVP combine builds 2560x1440 quads
+// over a 416x416 target and the scope shows a magnified fog-colored crop.
+static bool SvpPassBound() { return Device.true_pip_on && Device.m_SecondViewport.m_render_pass_is_svp; }
+unsigned RenderScreenWidth() { return inScene && !SvpPassBound() ? dlss::RenderWidth() : Device.dwWidth; }
+unsigned RenderScreenHeight() { return inScene && !SvpPassBound() ? dlss::RenderHeight() : Device.dwHeight; }
 
 namespace dlss
 {

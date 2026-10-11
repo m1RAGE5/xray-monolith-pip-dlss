@@ -1110,8 +1110,11 @@ CRenderTarget::CRenderTarget(LPCSTR name, u32 width, u32 height)
 
 	//SMAA
 	{
-		u32 w = dlss::RenderWidth();
-		u32 h = dlss::RenderHeight();
+		// pip per-target size: the SVP target must size its SMAA chain at its own
+		// Width/Height, dlss::RenderWidth() is the MAIN render size and leaves the
+		// SVP with display-sized SMAA RTs the pass then samples out of bounds
+		u32 w = isMain ? dlss::RenderWidth() : Width;
+		u32 h = isMain ? dlss::RenderHeight() : Height;
 
 		rt_smaa_edgetex = createUnique(r2_RT_smaa_edgetex, w, h, D3DFMT_A8R8G8B8);
 		rt_smaa_blendtex = createUnique(r2_RT_smaa_blendtex, w, h, D3DFMT_A8R8G8B8);
@@ -1146,15 +1149,16 @@ CRenderTarget::CRenderTarget(LPCSTR name, u32 width, u32 height)
 	{
 		u32 w = 0;
 		u32 h = 0;
+		// pip per-target size (see SMAA note above), the SVP needs its own half depth
 		if (RImplementation.o.ssao_half_data)
 		{
-			w = dlss::RenderWidth() / 2;
-			h = dlss::RenderHeight() / 2;
+			w = (isMain ? dlss::RenderWidth() : Width) / 2;
+			h = (isMain ? dlss::RenderHeight() : Height) / 2;
 		}
 		else
 		{
-			w = dlss::RenderWidth();
-			h = dlss::RenderHeight();
+			w = isMain ? dlss::RenderWidth() : Width;
+			h = isMain ? dlss::RenderHeight() : Height;
 		}
 
 		D3DFORMAT fmt = HW.Caps.id_vendor == 0x10DE ? D3DFMT_R32F : D3DFMT_R16F;
