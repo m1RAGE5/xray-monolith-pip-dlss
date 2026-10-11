@@ -116,6 +116,31 @@ public:
     }
 };
 
+// Camera-only motion vectors from scene depth. Modded shader packs do not
+// export MVs for every deferred material; the temporal reconstruction then
+// glues the silent surfaces to the screen (the world slides against the
+// camera while the patched shaders stay put). The pass reads the SSS buffer,
+// rebuilds the camera component where it is zero and writes the hybrid into
+// its own target - the SSS buffer itself is never modified.
+class CBlender_upscaler_camera_mv : public IBlender
+{
+public:
+    CBlender_upscaler_camera_mv() { description.CLS = 0; }
+    LPCSTR getComment() override { return "Upscaler camera motion vectors"; }
+    BOOL canBeDetailed() override { return FALSE; }
+    BOOL canBeLMAPped() override { return FALSE; }
+    void Compile(CBlender_Compile& C) override
+    {
+        IBlender::Compile(C);
+        if (C.iElement != 0) return;
+        C.r_Pass("stub_screen_space", "upscaler_camera_mv", FALSE, FALSE, FALSE);
+        C.r_dx10Texture("s_scene_depth", "$user$dlss_scene_depth");
+        C.r_dx10Texture("s_motion_vectors", "$user$ssfx_motion_vectors");
+        C.r_dx10Sampler("smp_rtlinear");
+        C.r_End();
+    }
+};
+
 void CRenderTarget::set_viewport_size(ID3DDeviceContext * dev, float w, float h)
 {
 	custom_viewport[0].Width = w;
@@ -1527,6 +1552,17 @@ CRenderTarget::CRenderTarget(LPCSTR name, u32 width, u32 height)
 		s_dlss_postprocess.create(&blender, "dlss_postprocess");
 		CBlender_dlss_copy copy;
 		s_dlss_copy.create(&copy, "dlss_copy");
+		// Camera-MV fallback is optional: without the shader the engine
+		// keeps consuming the raw SSS buffer exactly like upstream. The
+		// SVP target never evaluates the upscaler, main view only.
+		string_path cameraMvFile;
+		if (isMain && FS.exist(cameraMvFile, "$game_shaders$", "r3\\upscaler_camera_mv", ".ps"))
+		{
+				rt_upscaler_camera_mv.create("$user$upscaler_camera_mv",
+						dlss::RenderWidth(), dlss::RenderHeight(), D3DFMT_A16B16G16R16F);
+				CBlender_upscaler_camera_mv cameraMv;
+				s_upscaler_camera_mv.create(&cameraMv, "upscaler_camera_mv");
+		}
 	}
 	g_postprocess.create(D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_SPECULAR | D3DFVF_TEX3, RCache.Vertex.Buffer(),
 	                     RCache.QuadIB);

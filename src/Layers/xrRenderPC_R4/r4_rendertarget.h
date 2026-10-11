@@ -404,6 +404,12 @@ public:
 	ref_rt rt_dlss_post_source;
 	ref_rt rt_dlss_post_color;
 	ref_texture t_dlss_output;
+	// Camera-MV fallback for the temporal upscaler (main view only): a
+	// render-size hybrid buffer filled by phase_upscaler_camera_mv from
+	// the scene depth, kept separate so the SSS buffer stays untouched.
+	ref_rt rt_upscaler_camera_mv;
+	ref_shader s_upscaler_camera_mv;
+	bool reported_camera_mv = false; // One diagnostic per target lifetime.
 	ref_shader s_postprocess_msaa;
 	ref_geom g_postprocess;
 	ref_shader s_menu;
@@ -564,6 +570,10 @@ public:
 	void phase_combine_volumetric();
 	void phase_pp();
 	void phase_dlss_postprocess();
+	// Fills zero motion-vector pixels with camera-only vectors from the
+	// scene depth. Returns the buffer the upscaler should consume (the
+	// hybrid RT, or the raw SSS buffer when the pass cannot run).
+	ref_rt& phase_upscaler_camera_mv();
 	ref_rt& PostprocessColor();
 	ref_rt& PostprocessSource();
 

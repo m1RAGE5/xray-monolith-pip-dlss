@@ -17,7 +17,8 @@ Audited enabled loose-file providers in G.A.M.M.A. Co-op, 2026-10-07:
   Optional WearableDevices:
     wd_body.vs (body and alpha-tested chassis/bracer materials)
   New integration files:
-    dlss_contract.h, dlss_copy.ps, dlss_cas.h, dlss_sharpen.ps, dlss_ui_depth.ps
+    dlss_contract.h, dlss_copy.ps, dlss_cas.h, dlss_sharpen.ps, dlss_ui_depth.ps,
+    upscaler_camera_mv.ps (camera-only motion-vector fallback for the upscaler),
     scripts/modxml_dlss_options.script
     configs/text/eng/st_monolith_dlss.xml
 
@@ -48,7 +49,12 @@ checksum are recorded in tools/dlss/README.txt. No Frame Generation is included.
 
 Changes: non-jittered MV convention retained; bounded homogeneous division;
 uniform DLSS grass jitter and previous wind motion; flat-material MV output;
-jitter-aware SSS history reprojection; NV depth loads use physical depth size.
+jitter-aware SSS history reprojection; NV depth loads use physical depth size;
+camera-only MV fallback (upscaler_camera_mv.ps) fills the motion-vector
+pixels a modded pack left at zero, so the temporal reconstruction no longer
+glues silent materials to the screen. r__upscaler_camera_mv 0|1|2 selects
+off / fill-missing (default) / camera-only. The engine also ships this shader
+inside 00_modded_exes_gamedata.db0, the MO2 override here wins conflicts.
 Existing material/weather/NV customization and attribution remain in place.
 
 The matching engine draws the handheld PDA screen after reconstruction, at

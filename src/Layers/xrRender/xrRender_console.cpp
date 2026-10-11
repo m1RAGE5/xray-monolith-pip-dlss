@@ -27,6 +27,10 @@ float ps_r_dlss_sharpness = 0.0f;
 // deferred geometry - then the reconstruction no longer disagrees with the
 // raster and the "shifting geometry" artifact at upscaled resolutions is gone.
 int ps_r_upscaler_jitter = 1;
+// 1 = fill zero motion vectors with camera-only vectors from scene depth
+// (default; modded packs may not export MVs for every deferred material),
+// 2 = force camera-only vectors, 0 = raw shader-pack buffer
+int ps_r__upscaler_camera_mv = 1;
 xr_token dlss_preset_token[] = {
     {"default", 0}, {"j", 10}, {"k", 11}, {"l", 12}, {"m", 13}, {nullptr, 0}
 };
@@ -1595,6 +1599,7 @@ void xrRender_initconsole()
 	CMD3(CCC_Token, "r_dlss_preset", &ps_r_dlss_preset, dlss_preset_token);
 	CMD4(CCC_Float, "r_dlss_sharpness", &ps_r_dlss_sharpness, 0.0f, 1.0f);
 	CMD4(CCC_Integer, "r__upscaler_jitter", &ps_r_upscaler_jitter, 0, 1);
+	CMD4(CCC_Integer, "r__upscaler_camera_mv", &ps_r__upscaler_camera_mv, 0, 2);
 #endif
 	CMD3(CCC_Mask,		"r2_gi",				&ps_r2_ls_flags,			R2FLAG_GI);
 	CMD4(CCC_Float,		"r2_gi_clip",			&ps_r2_GI_clip,				EPS,	0.1f	);

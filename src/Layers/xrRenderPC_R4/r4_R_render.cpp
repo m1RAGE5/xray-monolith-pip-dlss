@@ -417,7 +417,10 @@ void CRender::renderGBuffer(bool clearGraph)
 
     if (RImplementation.o.ssfx_motionvectors)
     {
-        Target->u_setrt(Device.dwWidth, Device.dwHeight, 0, 0, Target->rt_ssfx_motion_vectors->pRT, 0);
+        // brodrigz parity: pass the ACTIVE viewport's screen dims, not the raw
+        // device size - under the upscaler the main pass stores the render
+        // resolution, an SVP pass stores its own square target.
+        Target->u_setrt(RenderScreenWidth(), RenderScreenHeight(), 0, 0, Target->rt_ssfx_motion_vectors->pRT, 0);
 
         FLOAT ColorRGBA[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
         HW.pContext->ClearRenderTargetView(Target->rt_ssfx_motion_vectors->pRT, ColorRGBA);
@@ -433,7 +436,7 @@ void CRender::renderGBuffer(bool clearGraph)
 
         if (ps_r2_ls_flags.test(R2FLAG_TERRAIN_PREPASS))
         {
-                Target->u_setrt(Device.dwWidth, Device.dwHeight, NULL, NULL, NULL, !RImplementation.o.dx10_msaa ? Target->u_SceneDepth() : Target->rt_MSAADepth->pZRT);
+                Target->u_setrt(RenderScreenWidth(), RenderScreenHeight(), NULL, NULL, NULL, !RImplementation.o.dx10_msaa ? Target->u_SceneDepth() : Target->rt_MSAADepth->pZRT);
         }
 
         //******* Main render :: PART-0 -- first

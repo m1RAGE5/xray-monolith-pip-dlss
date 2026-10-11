@@ -1,0 +1,56 @@
+// Camera-only motion vectors from scene depth - temporal upscaler fallback.
+// Modded shader packs do not always export motion vectors for every deferred
+// material; those pixels keep the clear value (0,0) and the temporal
+// reconstruction glues their surfaces to the screen - the world appears to
+// slide against the camera while the patched shaders (grass, trees) stay put.
+// This pass rebuilds the CAMERA component of the motion from the scene depth
+// and fills the missing pixels; animated geometry keeps whatever the pack
+// exported. Vectors follow the SSS screenspace_mvectors.h convention:
+// (currUV - prevUV) in texture-space UV, Y down - the engine scales the
+// buffer by (-renderW,-renderH) for NGX/FSR3, so no extra conversion here.
+// Both matrices are UNJITTERED (the engine bakes no jitter into Device
+// projections; the raster offset is applied inside the vertex shaders), so
+// the result is jitter-free exactly like the SSS export path.
+#include "common.h"
+
+Texture2D<float> s_scene_depth;      // $user$dlss_scene_depth, 0 near -> 1 far
+Texture2D<float4> s_motion_vectors; // $user$ssfx_motion_vectors
+
+uniform float4x4 m_inv_view_proj;   // current frame, clip -> world (unjittered)
+uniform float4x4 m_vp_prev;         // previous frame, world -> clip (unjittered)
+uniform float4 upscaler_camera_mv_mode; // x: 1 fill missing, 2 force camera-only
+
+float4 main(p_screen I) : SV_Target
+{
+    float2 uv = I.tc0;
+    float depth = s_scene_depth.SampleLevel(smp_rtlinear, uv, 0);
+
+    // Texture space (Y down) -> clip space (Y up), depth as-is (D3D z in [0,1]).
+    float4 clip;
+    clip.x = uv.x * 2.0 - 1.0;
+    clip.y = 1.0 - uv.y * 2.0;
+    clip.z = depth;
+    clip.w = 1.0;
+
+    // Reconstruct the world position behind this pixel and reproject it with
+    // the previous camera. Skip the math where the depth is meaningless.
+    float4 world = mul(m_inv_view_proj, clip);
+    float4 prevClip = mul(m_vp_prev, float4(world.xyz / world.w, 1.0));
+
+    float2 prevUV;
+    prevUV.x = prevClip.x / prevClip.w * 0.5 + 0.5;
+    prevUV.y = 0.5 - prevClip.y / prevClip.w * 0.5;
+
+    // curr - prev, texture-space, Y down - matches ssfx_mv_calc output.
+    float2 camMV = uv - prevUV;
+
+    float4 stored = s_motion_vectors.SampleLevel(smp_rtlinear, uv, 0);
+
+    // Keep any vector the shader pack actually exported (grass, trees, HUD
+    // all have valid per-object data there); only fill the silent pixels.
+    bool hasStored = abs(stored.x) + abs(stored.y) > 1e-6;
+    if (upscaler_camera_mv_mode.x > 1.5 || !hasStored)
+        stored.xy = camMV;
+
+    return stored;
+}

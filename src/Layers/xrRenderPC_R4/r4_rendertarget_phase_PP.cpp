@@ -122,10 +122,57 @@ ref_rt& CRenderTarget::PostprocessSource()
 	return dlss::Configured() ? rt_dlss_post_source : rt_Generic_0;
 }
 
+// Camera-MV fallback: reproject the scene depth with the previous camera and
+// fill the motion-vector pixels the active shader pack left at zero. Modded
+// packs do not always export MVs for every deferred material, and the temporal
+// upscaler then glues those surfaces to the screen - the world appears to
+// slide against the camera while the materials that do export (grass, trees)
+// stay put. The hybrid goes into its own render-size target, the SSS buffer
+// stays untouched for every other consumer (TAA, motion blur, debug views).
+ref_rt& CRenderTarget::phase_upscaler_camera_mv()
+{
+	if (this != RImplementation.TargetMain || !s_upscaler_camera_mv || !rt_upscaler_camera_mv
+		|| ps_r__upscaler_camera_mv <= 0 || !dlss::Active())
+		return rt_ssfx_motion_vectors;
+
+	// Fullscreen draw at the upscaler's render size; save and restore the
+	// ambient viewport so the DLSS resolve below sees its exact prior state.
+	D3D_VIEWPORT saved[1];
+	UINT savedCount = 1;
+	HW.pContext->RSGetViewports(&savedCount, saved);
+
+	u_setrt(rt_upscaler_camera_mv, nullptr, nullptr, nullptr);
+	RImplementation.rmNormal();
+	RCache.set_CullMode(CULL_NONE);
+	RCache.set_Stencil(FALSE);
+	RCache.set_ColorWriteEnable();
+	set_viewport_size(HW.pContext, float(dlss::RenderWidth()), float(dlss::RenderHeight()));
+	u32 offset;
+	const float w = float(dlss::RenderWidth()), h = float(dlss::RenderHeight());
+	FVF::TL* vertices = (FVF::TL*)RCache.Vertex.Lock(4, g_combine->vb_stride, offset);
+	vertices[0].set(0, h, EPS_S, 1, 0xffffffff, 0, 1);
+	vertices[1].set(0, 0, EPS_S, 1, 0xffffffff, 0, 0);
+	vertices[2].set(w, h, EPS_S, 1, 0xffffffff, 1, 1);
+	vertices[3].set(w, 0, EPS_S, 1, 0xffffffff, 1, 0);
+	RCache.Vertex.Unlock(4, g_combine->vb_stride);
+	RCache.set_Element(s_upscaler_camera_mv->E[0]);
+	RCache.set_c("upscaler_camera_mv_mode", float(ps_r__upscaler_camera_mv), 0.f, 0.f, 0.f);
+	RCache.set_Geometry(g_combine);
+	RCache.Render(D3DPT_TRIANGLELIST, offset, 0, 4, 0, 2);
+
+	HW.pContext->RSSetViewports(savedCount, saved);
+	if (!reported_camera_mv)
+	{
+		reported_camera_mv = true;
+		Msg("[Upscaler] camera MV fallback active: mode=%d%s", ps_r__upscaler_camera_mv,
+			ps_r__upscaler_camera_mv == 1 ? " (filling zero vectors)" : " (camera-only)");
+	}
+	return rt_upscaler_camera_mv;
+}
 void CRenderTarget::phase_dlss_postprocess()
 {
 	const auto sceneJitter = dlss::RasterJitter();
-	const bool dlssOutput = dlss::Evaluate(rt_Color->pSurface, rt_ssfx_motion_vectors->pSurface);
+	const bool dlssOutput = dlss::Evaluate(rt_Color->pSurface, phase_upscaler_camera_mv().pSurface);
 	dlss::EndScene();
 	if (!dlss::Configured()) return;
 

@@ -1275,6 +1275,17 @@ static class dlss_temporal_jitter : public R_constant_setup
         RCache.set_c(C, current.x / width, current.y / height, previous.x / width, previous.y / height);
     }
 } binder_dlss_temporal_jitter;
+// Clip -> world of the current UNJITTERED camera for the upscaler camera-MV
+// pass (upscaler_camera_mv.ps). Device.mFullTransform never carries the
+// raster jitter - the vertex shaders apply that - so the inverse here matches
+// the unjittered m_vp_prev used on the other side of the reprojection.
+static class inv_view_proj : public R_constant_setup
+{
+    void setup(R_constant* C) override
+    {
+        RCache.set_c(C, Device.mInvFullTransform);
+    }
+} binder_inv_view_proj;
 #endif
 
 static class ssfx_fTimeDelta : public R_constant_setup
@@ -1575,6 +1586,7 @@ void CBlender_Compile::SetMapping()
 #if defined(USE_DX11)
 	r_Constant("dlss_params", &binder_dlss_params);
 	r_Constant("dlss_temporal_jitter", &binder_dlss_temporal_jitter);
+	r_Constant("m_inv_view_proj", &binder_inv_view_proj);
 #endif
 	r_Constant("ssfx_pom", &ssfx_pom);
 

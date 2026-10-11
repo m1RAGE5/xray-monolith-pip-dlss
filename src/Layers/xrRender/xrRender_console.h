@@ -12,6 +12,12 @@ extern ECORE_API float ps_r_dlss_sharpness;
 // that do not apply ssfx_taa_jitter to every deferred shader; keeps the
 // temporal reconstruction stable at the cost of some edge AA)
 extern ECORE_API int ps_r_upscaler_jitter;
+// Camera-only motion-vector fallback for the temporal upscaler. 1 (default)
+// rebuilds the camera component of every motion-vector pixel the active
+// shader pack left at zero (packs that do not export MVs for every deferred
+// material make the reconstruction glue those surfaces to the screen),
+// 2 forces camera-only vectors everywhere, 0 keeps the raw pack buffer.
+extern ECORE_API int ps_r__upscaler_camera_mv;
 extern ECORE_API float ps_ssfx_fog_scattering;
 extern ECORE_API Fvector4 ps_ssfx_motionblur;
 extern ECORE_API Fvector4 ps_ssfx_taa;

@@ -11,15 +11,9 @@ env:
   # Path to the solution file relative to the root of the project.
   SOLUTION_FILE_PATH: src/engine-vs2022.sln
 
-  # Configuration type to build.
-  DX11: DX11
-  DX10: DX10
-  DX9: DX9
-  DX8: DX8
-  DX11AVX: DX11-AVX
-  DX10AVX: DX10-AVX
-  DX9AVX: DX9-AVX
-  DX8AVX: DX8-AVX
+  # Only the DX11 AVX configuration is shipped; the other seven build
+  # configurations remain available locally for developers.
+  BUILD_CONFIG: DX11-AVX
   PACK_GAMEDATA_NAME: 00_modded_exes_gamedata.db0
 
 jobs:
@@ -64,7 +58,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        buildconf: ["DX11", "DX10", "DX9", "DX8", "DX11-AVX", "DX10-AVX", "DX9-AVX", "DX8-AVX"]
+        buildconf: ["DX11-AVX"]
 
     steps:
     - name: Configure Pagefile
@@ -158,17 +152,9 @@ jobs:
 
         mv ${{env.PACK_GAMEDATA_NAME}}/*.db0 release_mt/db/mods
 
-        mv ${{env.DX11}}_mt_exe/*.exe release_mt/bin
-        mv ${{env.DX10}}_mt_exe/*.exe release_mt/bin
-        mv ${{env.DX9}}_mt_exe/*.exe release_mt/bin
-        mv ${{env.DX8}}_mt_exe/*.exe release_mt/bin
-        mv ${{env.DX11AVX}}_mt_exe/*.exe release_mt/bin
-        mv ${{env.DX10AVX}}_mt_exe/*.exe release_mt/bin
-        mv ${{env.DX9AVX}}_mt_exe/*.exe release_mt/bin
-        mv ${{env.DX8AVX}}_mt_exe/*.exe release_mt/bin
+        mv ${{env.BUILD_CONFIG}}_mt_exe/*.exe release_mt/bin
 
-        unzip ${{env.DX11}}_mt_pdb/*.zip -d release_mt/bin
-        unzip ${{env.DX11AVX}}_mt_pdb/*.zip -d release_mt/bin
+        unzip ${{env.BUILD_CONFIG}}_mt_pdb/*.zip -d release_mt/bin
 
         cd release_mt
         zip -r 'STALKER-Anomaly-modded-exes-PiP-DLSS-MT_${{steps.datetime.outputs.today}}.zip' ./*
@@ -178,14 +164,13 @@ jobs:
     - name: Move PDBs to folder
       run: |
         mkdir pdb
-        mv ${{env.DX11}}_mt_pdb/*.zip pdb
-        mv ${{env.DX10}}_mt_pdb/*.zip pdb
-        mv ${{env.DX9}}_mt_pdb/*.zip pdb
-        mv ${{env.DX8}}_mt_pdb/*.zip pdb
-        mv ${{env.DX11AVX}}_mt_pdb/*.zip pdb
-        mv ${{env.DX10AVX}}_mt_pdb/*.zip pdb
-        mv ${{env.DX9AVX}}_mt_pdb/*.zip pdb
-        mv ${{env.DX8AVX}}_mt_pdb/*.zip pdb
+        mv ${{env.BUILD_CONFIG}}_mt_pdb/*.zip pdb
+
+    - name: Pack GAMMA compatibility patch
+      run: |
+        cd extras/dlss_gamma
+        zip -r '../../dlss-binaries-GAMMA-compatibility-patch-pip.zip' gamedata README.txt
+        cd ../..
 
     - name: Publish
       uses: softprops/action-gh-release@v2.3.2
@@ -193,8 +178,9 @@ jobs:
         files: |
           *.zip
           pdb/*.zip
+          dlss-binaries-GAMMA-compatibility-patch-pip.zip
         tag_name: "${{steps.datetime.outputs.today}}-pip-dlss"
-        name: "${{steps.datetime.outputs.today}} PiP + DLSS/FSR3 MT"
+        name: "2026.9.12 DLSS/FSR3 MT + Immersive Bodycam"
         body: |
           ## What's Inside
           * X-Ray Monolith MT (upstream all-in-one-vs2022-wpo-mt, based on 2026.9.12) with Shader Bus
@@ -203,8 +189,15 @@ jobs:
             To work, **require nvngx_dlss.dll in dlss-binaries and GAMMA patch** from [brodrigz modded binaries](https://github.com/brodrigz/xray-monolith/releases).
 
           ## Build
-          * All 8 configurations: DX11/DX10/DX9/DX8 x86 baseline and AVX
+          * DX11-AVX configuration (AnomalyDX11AVX.exe); the other seven configurations are not shipped
           * MT-TEST performance branch
+
+          ## Upscaling requirements
+          1. Install the bundled `dlss-binaries-GAMMA-compatibility-patch-pip.zip` as an MO2 mod with priority AFTER Screen Space Shaders / Atmospherics (it also ships inside `00_modded_exes_gamedata.db0`, the MO2 override wins conflicts).
+          2. Put NVIDIA's release `nvngx_dlss.dll` (from [brodrigz modded binaries](https://github.com/brodrigz/xray-monolith/releases) or [NVIDIA/DLSS v310.9.1](https://github.com/NVIDIA/DLSS/releases/tag/v310.9.1)) beside `AnomalyDX11AVX.exe`.
+          3. Turn MSAA Off, select FSR 3 / DLSS in Video settings, Apply.
+
+          If the world appears to slide against the camera at upscaled resolutions (a shader pack that does not export motion vectors for every material), set `r__upscaler_camera_mv 1` (default) - the engine then rebuilds the missing camera vectors from depth. `2` forces camera-only vectors, `0` disables the fallback.
         token: "${{ secrets.GITHUB_TOKEN }}"
 
     - name: Remove artifacts
