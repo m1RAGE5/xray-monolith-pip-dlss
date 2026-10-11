@@ -1,12 +1,16 @@
-# STALKER Anomaly Modded Exes — PiP Scopes + DLSS/FSR3 (X-Ray Monolith MT fork)
+# Immersive Bodycam — STALKER Anomaly Modded Exes (X-Ray Monolith MT fork)
 
-This repository is a **combined modded exes build** for S.T.A.L.K.E.R. Anomaly 1.5.3 / GAMMA,
-merged from three X-Ray Monolith development branches:
+**Immersive Bodycam** is a **combined modded exes build** for S.T.A.L.K.E.R. Anomaly 1.5.3 / GAMMA.
+It is named after its centerpiece feature set — the bodycam-style first-person experience from
+[asuparabekon/xray-monolith-bodycam](https://github.com/asuparabekon/xray-monolith-bodycam): true
+picture-in-picture weapon scopes rendered through the objective lens **plus** bodycam-style
+weapon and camera movement (sway, inertia, positional motion). On top of that it ships native
+DLSS / FSR 3.1 upscaling. Merged from three X-Ray Monolith development branches:
 
 | Component | Source | What it gives you |
 |---|---|---|
 | Base — X-Ray Monolith **MT** | [themrdemonized/xray-monolith](https://github.com/themrdemonized/xray-monolith), branch `all-in-one-vs2022-wpo-mt` (based on the 2026.9.12 release) | All modded exes features + MT optimizations + **Shader Bus** (required for Glossy Puddles and other new shader mods) |
-| **PiP scopes** (objective-camera) | [asuparabekon/xray-monolith-bodycam](https://github.com/asuparabekon/xray-monolith-bodycam), branch `bodycam-mt` | True picture-in-picture: a second world render through the scope's objective lens, optics physics, tunneling, parallax, bodycam camera module |
+| **Immersive Bodycam** (PiP scopes + bodycam movement) | [asuparabekon/xray-monolith-bodycam](https://github.com/asuparabekon/xray-monolith-bodycam), branch `bodycam-mt` | True picture-in-picture: a second world render through the scope's objective lens, optics physics, tunneling, parallax, plus the bodycam camera module for weapon/camera movement |
 | **Native DLSS / FSR 3.1** | [brodrigz/xray-monolith](https://github.com/brodrigz/xray-monolith), release 1.0.0 | DLSS and FSR3 upscaling natively in DX11, quality presets, CAS sharpening, native-resolution PDA/wearable screens |
 
 > [!NOTE]
@@ -17,12 +21,13 @@ merged from three X-Ray Monolith development branches:
 
 ## What's Inside
 
-* **Picture-in-Picture scopes** — instead of a shader "zoom", a second view of the world is
-  rendered from the scope's objective lens position:
+* **Immersive Bodycam — PiP scopes + bodycam movement** — instead of a shader "zoom", a second view of the world is
+  rendered from the scope's objective lens, and the weapon/camera motion follows the bodycam model:
   * a dedicated entrance-pupil camera with physically modeled eye relief, exit pupil and objective diameter;
   * tunneling and vignetting driven by actual eye alignment instead of a fixed overlay;
   * typed optics profiles (LPVO, reflex sights, "figure-eight" scopes, night vision devices),
     weapon-relative reticle positioning as the weapon moves in the deadzone;
+  * bodycam-style weapon sway, inertia and positional camera motion;
   * configuration via an MCM menu and ImGui, `bodycam_user.ltx` for user presets.
 * **Native DLSS / FSR 3.1** (from brodrigz):
   * DLSS (NVIDIA NGX) and FSR 3.1 directly in DX11, no injectors and no DX12 bridge;
@@ -44,7 +49,7 @@ merged from three X-Ray Monolith development branches:
 2. Copy the contents of `bin/` into the Anomaly game root (replacing files).
 3. Copy `db/mods/00_modded_exes_gamedata.db0` into `<game>/db/mods/`.
 4. **Delete the shader cache** in the launcher before the first launch (one time).
-5. PiP scope and Bodycam settings: the MCM menu in the game settings + the ImGui panel.
+5. Immersive Bodycam settings (PiP scopes, bodycam movement): the MCM menu in the game settings + the ImGui panel.
 6. For DLSS/FSR3 (optional):
    * install **SSS Update 23+** (its motion vectors are required);
    * in the video settings, disable MSAA and SSS TAA;
