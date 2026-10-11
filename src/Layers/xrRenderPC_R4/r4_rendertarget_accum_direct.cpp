@@ -742,11 +742,7 @@ void CRenderTarget::accum_direct_blend()
 	{
 		VERIFY(0);
 		if (! RImplementation.o.dx10_msaa)
-<<<<<<< HEAD
-			u_setrt(rt_Accumulator,NULL,NULL, dlss::SceneDepth());
-=======
 			u_setrt(rt_Accumulator,NULL,NULL, u_SceneDepth());
->>>>>>> 3e5d03821e114f475a3a68a94a67ca9d5c432dbc
 		else
 			u_setrt(rt_Accumulator,NULL,NULL, rt_MSAADepth->pZRT);
 
@@ -827,11 +823,7 @@ void CRenderTarget::accum_direct_f(u32 sub_phase)
 	}
 	phase_accumulator();
 	if (! RImplementation.o.dx10_msaa)
-<<<<<<< HEAD
-		u_setrt(rt_Generic_0,NULL,NULL, dlss::SceneDepth());
-=======
 		u_setrt(rt_Generic_0,NULL,NULL, u_SceneDepth());
->>>>>>> 3e5d03821e114f475a3a68a94a67ca9d5c432dbc
 	else
 		u_setrt(rt_Generic_0_r,NULL,NULL, RImplementation.Target->rt_MSAADepth->pZRT);
 
@@ -940,11 +932,7 @@ void CRenderTarget::accum_direct_f(u32 sub_phase)
 	// Perform lighting
 	{
 		if (! RImplementation.o.dx10_msaa)
-<<<<<<< HEAD
-			u_setrt(rt_Generic_0,NULL,NULL, dlss::SceneDepth()); // enshure RT setup
-=======
 			u_setrt(rt_Generic_0,NULL,NULL, u_SceneDepth()); // enshure RT setup
->>>>>>> 3e5d03821e114f475a3a68a94a67ca9d5c432dbc
 		else
 			u_setrt(rt_Generic_0_r,NULL,NULL, RImplementation.Target->rt_MSAADepth->pZRT); // enshure RT setup
 		RCache.set_CullMode(CULL_NONE);

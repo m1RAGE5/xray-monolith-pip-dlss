@@ -100,11 +100,7 @@ void CRenderTarget::accum_reflected(light* L)
 	if (!RImplementation.o.fp16_blend)
 	{
 		if (! RImplementation.o.dx10_msaa)
-<<<<<<< HEAD
-			u_setrt(rt_Accumulator,NULL,NULL, dlss::SceneDepth());
-=======
 			u_setrt(rt_Accumulator,NULL,NULL, u_SceneDepth());
->>>>>>> 3e5d03821e114f475a3a68a94a67ca9d5c432dbc
 		else
 			u_setrt(rt_Accumulator,NULL,NULL, rt_MSAADepth->pZRT);
 		RCache.set_Element(s_accum_mask->E[SE_MASK_ACCUM_VOL]);

@@ -102,8 +102,6 @@ Base: `origin/all-in-one-vs2022-wpo-mt` (7b79d2be). Merged on top:
     a single place (the end of the deferred pass) to avoid drawing twice;
   * UI tab scrolling taken from upstream (the newer implementation), the scope overlay custom
     UI clipping (`SetHitClip`, `HasCustomClip`) — from bodycam.
-<<<<<<< HEAD
-=======
 
 ---
 
@@ -2505,4 +2503,3 @@ override = true
 
 * Exported distance_to_xz_sqr() function of Fvector
 * Redesigned duplicate section error, it will additionally print what file adds the section in the first place in addition to the file that has the duplicate
->>>>>>> 3e5d03821e114f475a3a68a94a67ca9d5c432dbc

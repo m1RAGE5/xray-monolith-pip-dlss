@@ -123,11 +123,6 @@ void CRenderTarget::set_viewport_size(ID3DDeviceContext * dev, float w, float h)
 	dev->RSSetViewports(1, custom_viewport);
 }
 
-<<<<<<< HEAD
-void CRenderTarget::u_setrt(const ref_rt& _1, const ref_rt& _2, const ref_rt& _3, const ref_rt& _4, ID3DDepthStencilView* zb)
-{
-	if (zb == HW.pBaseZB) zb = dlss::SceneDepth();
-=======
 // DLSS-aware depth, main viewport only: the global dlss::SceneDepth() always returns
 // the main-sized DLSS depth buffer, an SVP pass must bind its own (differently sized)
 // depth or D3D drops the geometry and the scope renders white
@@ -139,7 +134,6 @@ ID3DDepthStencilView* CRenderTarget::u_SceneDepth()
 void CRenderTarget::u_setrt(const ref_rt& _1, const ref_rt& _2, const ref_rt& _3, const ref_rt& _4, ID3DDepthStencilView* zb)
 {
 	if (zb == HW.pBaseZB) zb = u_SceneDepth();
->>>>>>> 3e5d03821e114f475a3a68a94a67ca9d5c432dbc
 	VERIFY(_1 || zb);
 	if (_1)
 	{
@@ -177,21 +171,13 @@ void CRenderTarget::u_setrt(const ref_rt& _1, const ref_rt& _2, const ref_rt& _3
 	else RCache.set_RT(NULL, 2);
 	if (_4) RCache.set_RT(_4->pRT, 3);
 	else RCache.set_RT(NULL, 3);
-<<<<<<< HEAD
-	RCache.set_ZB(zb == HW.pBaseZB ? dlss::SceneDepth() : zb);
-=======
 	RCache.set_ZB(zb == HW.pBaseZB ? u_SceneDepth() : zb);
->>>>>>> 3e5d03821e114f475a3a68a94a67ca9d5c432dbc
 	//	RImplementation.rmNormal				();
 }
 
 void CRenderTarget::u_setrt(const ref_rt& _1, const ref_rt& _2, const ref_rt& _3, ID3DDepthStencilView* zb)
 {
-<<<<<<< HEAD
-	if (zb == HW.pBaseZB) zb = dlss::SceneDepth();
-=======
 	if (zb == HW.pBaseZB) zb = u_SceneDepth();
->>>>>>> 3e5d03821e114f475a3a68a94a67ca9d5c432dbc
 	VERIFY(_1||zb);
 	if (_1)
 	{
@@ -227,21 +213,13 @@ void CRenderTarget::u_setrt(const ref_rt& _1, const ref_rt& _2, const ref_rt& _3
 	else RCache.set_RT(NULL, 1);
 	if (_3) RCache.set_RT(_3->pRT, 2);
 	else RCache.set_RT(NULL, 2);
-<<<<<<< HEAD
-	RCache.set_ZB(zb == HW.pBaseZB ? dlss::SceneDepth() : zb);
-=======
 	RCache.set_ZB(zb == HW.pBaseZB ? u_SceneDepth() : zb);
->>>>>>> 3e5d03821e114f475a3a68a94a67ca9d5c432dbc
 	//	RImplementation.rmNormal				();
 }
 
 void CRenderTarget::u_setrt(const ref_rt& _1, const ref_rt& _2, ID3DDepthStencilView* zb)
 {
-<<<<<<< HEAD
-	if (zb == HW.pBaseZB) zb = dlss::SceneDepth();
-=======
 	if (zb == HW.pBaseZB) zb = u_SceneDepth();
->>>>>>> 3e5d03821e114f475a3a68a94a67ca9d5c432dbc
 	VERIFY(_1||zb);
 	if (_1)
 	{
@@ -274,11 +252,7 @@ void CRenderTarget::u_setrt(const ref_rt& _1, const ref_rt& _2, ID3DDepthStencil
 	else RCache.set_RT(NULL, 0);
 	if (_2) RCache.set_RT(_2->pRT, 1);
 	else RCache.set_RT(NULL, 1);
-<<<<<<< HEAD
-	RCache.set_ZB(zb == HW.pBaseZB ? dlss::SceneDepth() : zb);
-=======
 	RCache.set_ZB(zb == HW.pBaseZB ? u_SceneDepth() : zb);
->>>>>>> 3e5d03821e114f475a3a68a94a67ca9d5c432dbc
 	//	RImplementation.rmNormal				();
 }
 
@@ -292,11 +266,7 @@ void CRenderTarget::u_setrt(u32 W, u32 H, ID3DRenderTargetView* _1, ID3DRenderTa
 	RCache.set_RT(_1, 0);
 	RCache.set_RT(_2, 1);
 	RCache.set_RT(_3, 2);
-<<<<<<< HEAD
-	RCache.set_ZB(zb == HW.pBaseZB ? dlss::SceneDepth() : zb);
-=======
 	RCache.set_ZB(zb == HW.pBaseZB ? u_SceneDepth() : zb);
->>>>>>> 3e5d03821e114f475a3a68a94a67ca9d5c432dbc
 	//	RImplementation.rmNormal				();
 }
 
