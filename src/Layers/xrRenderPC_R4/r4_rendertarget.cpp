@@ -520,7 +520,13 @@ CRenderTarget::CRenderTarget()
 CRenderTarget::CRenderTarget(LPCSTR name, u32 width, u32 height)
 	: Width(width), Height(height)
 {
-	dlss::InitializeTargets();
+	// The FSR3/DLSS context belongs to the main target only. The SVP scope target is
+	// created/deleted mid-frame (first aim, size change), so re-initializing the upscaler
+	// here would destroy the live context for the rest of that frame: one broken frame,
+	// cropped to render size and rendered at native viewport dims (shifted world).
+	m_is_main_target = (name == nullptr);
+	if (m_is_main_target)
+		dlss::InitializeTargets();
 	u32 SampleCount = 1;
 
 	if (ps_r_ssao_mode != 2/*hdao*/)
@@ -1571,9 +1577,15 @@ CRenderTarget::CRenderTarget(LPCSTR name, u32 width, u32 height)
 
 CRenderTarget::~CRenderTarget()
 {
-	if (t_dlss_output) t_dlss_output->surface_set(nullptr);
-	if (t_dlss_scene_depth) t_dlss_scene_depth->surface_set(nullptr);
-	dlss::ReleaseTargets();
+	// Dropping the SVP scope target (size change, aim end, VRAM pressure) must not kill the
+	// live upscaler context or strip the shared $user$dlss_* surface bindings the main target
+	// samples from; only the main target owns the upscaler lifecycle.
+	if (m_is_main_target)
+	{
+		if (t_dlss_output) t_dlss_output->surface_set(nullptr);
+		if (t_dlss_scene_depth) t_dlss_scene_depth->surface_set(nullptr);
+		dlss::ReleaseTargets();
+	}
 	_RELEASE(t_ss_async);
 
 	// Textures

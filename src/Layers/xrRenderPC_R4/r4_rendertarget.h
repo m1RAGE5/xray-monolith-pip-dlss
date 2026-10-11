@@ -258,6 +258,9 @@ public:
 	// taa history seeds from the current frame on the next resolve, true at creation and on scope edges
 	bool m_taa_seed_history = true;
 	bool m_svp_dlss_built = false; // pip this SVP target was built with the DLSS gate on (toggle-recreate key)
+	// the upscaler (FSR3/DLSS) lifecycle belongs to the main target only; the SVP scope target
+	// is created/deleted mid-frame on aim and size changes and must never touch the shared context
+	bool m_is_main_target = true;
 	// lean gate one-shot clear, the water reflection buffer gets wiped once on entering the skip
 	bool m_lean_water_cleared = false;
 	void EnsureScopeShaders();

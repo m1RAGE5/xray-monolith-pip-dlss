@@ -56,6 +56,11 @@ namespace dlss
 {
 void InitializeTargets()
 {
+    // Tripwire: a re-init while a scene is in progress means some mid-frame path (e.g. an
+    // SVP scope target create/destroy) still reaches here; that frame loses the temporal
+    // upscale and its viewports fall back to native dims (visible one-frame crop).
+    if (inScene)
+        Msg("! [Upscaler] reconfiguration requested mid-frame (frame=%u); one frame may fall back to spatial upscale", Device.dwFrame);
     ReleaseTargets();
     renderSize = {Device.dwWidth, Device.dwHeight};
     backendError[0] = 0;
