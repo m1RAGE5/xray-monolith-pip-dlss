@@ -1275,14 +1275,16 @@ static class dlss_temporal_jitter : public R_constant_setup
         RCache.set_c(C, current.x / width, current.y / height, previous.x / width, previous.y / height);
     }
 } binder_dlss_temporal_jitter;
-// Current-frame clip -> world (unjittered) for upscaler_camera_mv.ps.
-static class inv_view_proj : public R_constant_setup
+// clip(current) -> clip(previous) reprojection for upscaler_camera_mv.ps.
+static class upscaler_reproject : public R_constant_setup
 {
     void setup(R_constant* C) override
     {
-        RCache.set_c(C, Device.mInvFullTransform);
+        Fmatrix reproject;
+        reproject.mul(RCache.xforms.m_vp_prev[0], Device.mInvFullTransform);
+        RCache.set_c(C, reproject);
     }
-} binder_inv_view_proj;
+} binder_upscaler_reproject;
 #endif
 
 static class ssfx_fTimeDelta : public R_constant_setup
@@ -1583,7 +1585,7 @@ void CBlender_Compile::SetMapping()
 #if defined(USE_DX11)
 	r_Constant("dlss_params", &binder_dlss_params);
 	r_Constant("dlss_temporal_jitter", &binder_dlss_temporal_jitter);
-	r_Constant("m_inv_view_proj", &binder_inv_view_proj);
+	r_Constant("m_upscaler_reproject", &binder_upscaler_reproject);
 #endif
 	r_Constant("ssfx_pom", &ssfx_pom);
 

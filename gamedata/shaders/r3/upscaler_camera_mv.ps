@@ -1,12 +1,11 @@
-// Camera-only motion vectors from scene depth - temporal upscaler fallback for
-// shader packs that do not export MVs for every deferred material.
+// Camera-only motion vectors from scene depth - temporal upscaler fallback
+// for shader packs that do not export MVs for every deferred material.
 #include "common.h"
 
 Texture2D<float> s_scene_depth;
 Texture2D<float4> s_motion_vectors;
 
-uniform float4x4 m_inv_view_proj;
-uniform float4x4 m_vp_prev;
+uniform float4x4 m_upscaler_reproject; // clip(current) -> clip(previous)
 uniform float4 upscaler_camera_mv_mode; // x: 1 fill missing, 2 force camera-only
 
 float4 main(p_screen I) : SV_Target
@@ -21,8 +20,7 @@ float4 main(p_screen I) : SV_Target
     clip.z = depth;
     clip.w = 1.0;
 
-    float4 world = mul(m_inv_view_proj, clip);
-    float4 prevClip = mul(m_vp_prev, float4(world.xyz / world.w, 1.0));
+    float4 prevClip = mul(m_upscaler_reproject, clip);
 
     float2 prevUV;
     prevUV.x = prevClip.x / prevClip.w * 0.5 + 0.5;
