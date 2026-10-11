@@ -1,9 +1,19 @@
-name: MSBuild
+name: Build & Release
 
+# CI builds run on branch pushes (artifacts only, no release spam);
+# a release is published ONLY when a version tag like "2026.9.12-pip-dlss"
+# is pushed - tag, release name and asset names are all derived from that tag,
+# so they can never drift from the engine version again.
 on:
   push:
-    branches: [ "main", "pip-dlss-2026.9.12" ]
+    branches: [ "main", "dev" ]
+    tags: [ "*-pip-dlss" ]
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. 2026.9.12). Leave empty for a build-only run.'
+        required: false
+        default: ''
 
 permissions: write-all
 
@@ -133,12 +143,28 @@ jobs:
     needs: [pack_gamedata, build_mt]
     name: Release
     runs-on: ubuntu-latest
+    # Only publish on a version tag push, or on a manual run with an explicit version.
+    if: >-
+      startsWith(github.ref, 'refs/tags/') ||
+      (github.event_name == 'workflow_dispatch' && inputs.version != '')
     steps:
     - uses: actions/checkout@v4
 
-    - name: Get Datetime
-      id: datetime
-      run: echo "today=$(date +'%-Y.%-m.%-d')" >> "$GITHUB_OUTPUT"
+    - name: Derive version and tag from the pushed ref (never from the run date)
+      id: ver
+      run: |
+        if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+          VERSION="${{ inputs.version }}"
+          TAG="${VERSION}-pip-dlss"
+        else
+          TAG="$GITHUB_REF_NAME"
+          VERSION="${TAG%-pip-dlss}"
+          if [ -z "$VERSION" ] || [ "$VERSION" = "$TAG" ]; then
+            echo "Tag '$TAG' must look like '<version>-pip-dlss'"; exit 1
+          fi
+        fi
+        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+        echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
     - name: Download artifacts
       uses: actions/download-artifact@v4.1.8
@@ -157,14 +183,14 @@ jobs:
         unzip ${{env.BUILD_CONFIG}}_mt_pdb/*.zip -d release_mt/bin
 
         cd release_mt
-        zip -r 'STALKER-Anomaly-modded-exes-PiP-DLSS-MT_${{steps.datetime.outputs.today}}.zip' ./*
-        mv 'STALKER-Anomaly-modded-exes-PiP-DLSS-MT_${{steps.datetime.outputs.today}}.zip' ../
+        zip -r 'STALKER-Anomaly-modded-exes-PiP-DLSS-MT_${{steps.ver.outputs.version}}.zip' ./*
+        mv 'STALKER-Anomaly-modded-exes-PiP-DLSS-MT_${{steps.ver.outputs.version}}.zip' ../
         cd ..
 
     - name: Move PDBs to folder
       run: |
         mkdir pdb
-        mv ${{env.BUILD_CONFIG}}_mt_pdb/*.zip pdb
+        mv ${{env.BUILD_CONFIG}}_mt_pdb/*.zip 'pdb/STALKER-Anomaly-modded-exes-PiP-DLSS-MT_${{steps.ver.outputs.version}}_pdb.zip'
 
     - name: Pack GAMMA compatibility patch
       run: |
@@ -179,13 +205,13 @@ jobs:
           *.zip
           pdb/*.zip
         overwrite_files: true
-        tag_name: "${{steps.datetime.outputs.today}}-pip-dlss"
-        name: "2026.9.12 DLSS/FSR3 MT + Immersive Bodycam"
+        tag_name: "${{steps.ver.outputs.tag}}"
+        name: "${{steps.ver.outputs.version}} DLSS/FSR3 MT + Immersive Bodycam"
         body: |
-          ## What's Inside
-          * X-Ray Monolith MT (upstream all-in-one-vs2022-wpo-mt, based on 2026.9.12) with Shader Bus
-          * True Picture-in-Picture weapon scopes (objective-camera SVP, ported from asuparabekon/xray-monolith-bodycam)
-          * Native DX11 DLSS / FSR 3.1 upscaling (ported from brodrigz/xray-monolith 1.0.0);
+          ## Immersive Bodycam — What's Inside
+          * X-Ray Monolith MT (upstream all-in-one-vs2022-wpo-mt, based on ${{steps.ver.outputs.version}}) with Shader Bus
+          * **Immersive Bodycam** — true Picture-in-Picture weapon scopes (objective-camera SVP, optics physics, tunneling, parallax) plus bodycam-style weapon and camera movement (sway, inertia, positional motion), ported from asuparabekon/xray-monolith-bodycam
+          * **Native DX11 DLSS / FSR 3.1 upscaling** (ported from brodrigz/xray-monolith 1.0.0);
             To work, **require nvngx_dlss.dll in dlss-binaries and GAMMA patch** from [brodrigz modded binaries](https://github.com/brodrigz/xray-monolith/releases).
 
           ## Build
