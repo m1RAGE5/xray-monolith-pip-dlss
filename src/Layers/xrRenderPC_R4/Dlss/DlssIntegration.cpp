@@ -46,13 +46,8 @@ const char* BackendReason(const char* fallback) { return backendError[0] ? backe
 void ResetHistory() { backend.ResetHistory(); fsrBackend.ResetHistory(); }
 }
 
-// The upscaler render size belongs to the MAIN viewport only. While the SVP (scope)
-// pass is bound, CRenderTarget::SetActive() retargets Device.dwWidth/Height to the
-// small square SVP target, and every screen-size consumer (deferred combine quads,
-// pos_decompress shader constants, volumetric lights, rain, PP chains) must read
-// those per-viewport dims - exactly what the engine did with Device.dwWidth before
-// the DLSS integration. Without this gate the SVP combine builds 2560x1440 quads
-// over a 416x416 target and the scope shows a magnified fog-colored crop.
+// The upscaler render size belongs to the MAIN viewport only; during an SVP pass
+// every consumer must read the live Device dims instead.
 static bool SvpPassBound() { return Device.true_pip_on && Device.m_SecondViewport.m_render_pass_is_svp; }
 unsigned RenderScreenWidth() { return inScene && !SvpPassBound() ? dlss::RenderWidth() : Device.dwWidth; }
 unsigned RenderScreenHeight() { return inScene && !SvpPassBound() ? dlss::RenderHeight() : Device.dwHeight; }
@@ -207,8 +202,7 @@ void BeginScene()
         const D3D11_VIEWPORT viewport{0, 0, float(RenderWidth()), float(RenderHeight()), 0, 1};
         HW.pContext->RSSetViewports(1, &viewport);
     }
-    // Scope frames render spatially at the selected scene resolution. They must
-    // neither consume a jitter sample nor overwrite the main camera's history.
+    // Scope frames must neither consume a jitter sample nor overwrite the history.
     mainView = !Device.m_SecondViewport.IsSVPFrame();
     if (Active())
     {
@@ -224,11 +218,7 @@ void BeginScene()
         haveCamera = true;
         SSManager.SetMipLODBias(ps_r__tf_Mipbias + log2f(float(RenderWidth()) / Device.dwWidth));
     }
-    // One gate for the whole jitter chain: every consumer (ssfx_jitter and
-    // dlss_temporal_jitter binders, pos_decompress_params, NGX/FSR3
-    // jitterOffset) reads dlss::RasterJitter(), so turning it off here keeps
-    // the raster, the motion vectors and the reconstruction in agreement even
-    // when the active shader pack does not jitter every deferred shader.
+    // Single gate for the whole jitter chain (binders, NGX/FSR3 jitterOffset).
     rasterJitter = (Active() && ps_r_upscaler_jitter != 0)
         ? Jitter(jitterIndex++, renderSize, {Device.dwWidth, Device.dwHeight}) : Offset{};
 }
@@ -252,8 +242,7 @@ bool Evaluate(ID3D11Texture2D* color, ID3D11Texture2D* motion)
     frame.jitter = rasterJitter;
     frame.deltaMilliseconds = Device.fTimeDelta * 1000.0f;
     frame.frame = Device.dwFrame;
-    // Derive the actual main-view near/far/FOV from its projection, including
-    // camera overrides, rather than assuming the environment's nominal range.
+    // Near/far/FOV from the actual projection, including camera overrides.
     frame.cameraNear = -Device.mProject._43 / Device.mProject._33;
     frame.cameraFar = -Device.mProject._43 / (Device.mProject._33 - 1.0f);
     frame.verticalFov = 2.0f * atanf(1.0f / Device.mProject._22);

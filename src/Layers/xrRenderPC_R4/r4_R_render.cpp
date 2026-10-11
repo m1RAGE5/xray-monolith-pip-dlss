@@ -417,9 +417,7 @@ void CRender::renderGBuffer(bool clearGraph)
 
     if (RImplementation.o.ssfx_motionvectors)
     {
-        // brodrigz parity: pass the ACTIVE viewport's screen dims, not the raw
-        // device size - under the upscaler the main pass stores the render
-        // resolution, an SVP pass stores its own square target.
+        // Active viewport dims, not the raw device size (brodrigz parity).
         Target->u_setrt(RenderScreenWidth(), RenderScreenHeight(), 0, 0, Target->rt_ssfx_motion_vectors->pRT, 0);
 
         FLOAT ColorRGBA[4] = { 0.0f, 0.0f, 0.0f, 0.0f };

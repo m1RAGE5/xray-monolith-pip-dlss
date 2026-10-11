@@ -122,21 +122,14 @@ ref_rt& CRenderTarget::PostprocessSource()
 	return dlss::Configured() ? rt_dlss_post_source : rt_Generic_0;
 }
 
-// Camera-MV fallback: reproject the scene depth with the previous camera and
-// fill the motion-vector pixels the active shader pack left at zero. Modded
-// packs do not always export MVs for every deferred material, and the temporal
-// upscaler then glues those surfaces to the screen - the world appears to
-// slide against the camera while the materials that do export (grass, trees)
-// stay put. The hybrid goes into its own render-size target, the SSS buffer
-// stays untouched for every other consumer (TAA, motion blur, debug views).
+// Fills the zero motion-vector pixels the shader pack left with camera-only
+// vectors rebuilt from the scene depth; the SSS buffer stays untouched.
 ref_rt& CRenderTarget::phase_upscaler_camera_mv()
 {
 	if (this != RImplementation.TargetMain || !s_upscaler_camera_mv || !rt_upscaler_camera_mv
 		|| ps_r__upscaler_camera_mv <= 0 || !dlss::Active())
 		return rt_ssfx_motion_vectors;
 
-	// Fullscreen draw at the upscaler's render size; save and restore the
-	// ambient viewport so the DLSS resolve below sees its exact prior state.
 	D3D_VIEWPORT saved[1];
 	UINT savedCount = 1;
 	HW.pContext->RSGetViewports(&savedCount, saved);
@@ -172,7 +165,7 @@ ref_rt& CRenderTarget::phase_upscaler_camera_mv()
 void CRenderTarget::phase_dlss_postprocess()
 {
 	const auto sceneJitter = dlss::RasterJitter();
-	const bool dlssOutput = dlss::Evaluate(rt_Color->pSurface, phase_upscaler_camera_mv().pSurface);
+	const bool dlssOutput = dlss::Evaluate(rt_Color->pSurface, phase_upscaler_camera_mv()->pSurface);
 	dlss::EndScene();
 	if (!dlss::Configured()) return;
 
@@ -212,9 +205,8 @@ void CRenderTarget::phase_dlss_postprocess()
 				unsigned(RImplementation.GMBase.RGraph.mapHUDNativeUi.size()), unsigned(renderHudUi));
 			reported_native_ui = true;
 		}
-		// Scene depth is render-sized and jittered. Reproject it into the existing
-		// native depth buffer before drawing unjittered HUD screens. Keep their
-		// occlusion by hands/casing; never attach a render-sized DSV to a native RT.
+		// Reproject the render-sized scene depth into the native depth buffer
+		// before drawing the unjittered HUD screens.
 		u_setrt(rt_dlss_post_source, nullptr, nullptr, HW.pBaseZB);
 		RCache.set_Element(s_dlss_ui_depth->E[0]);
 		RCache.set_c("dlss_ui_depth_params", float(dlss::RenderWidth()) / w,

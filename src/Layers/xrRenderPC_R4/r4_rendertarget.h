@@ -404,12 +404,10 @@ public:
 	ref_rt rt_dlss_post_source;
 	ref_rt rt_dlss_post_color;
 	ref_texture t_dlss_output;
-	// Camera-MV fallback for the temporal upscaler (main view only): a
-	// render-size hybrid buffer filled by phase_upscaler_camera_mv from
-	// the scene depth, kept separate so the SSS buffer stays untouched.
+	// Render-size hybrid filled by phase_upscaler_camera_mv (main view only).
 	ref_rt rt_upscaler_camera_mv;
 	ref_shader s_upscaler_camera_mv;
-	bool reported_camera_mv = false; // One diagnostic per target lifetime.
+	bool reported_camera_mv = false;
 	ref_shader s_postprocess_msaa;
 	ref_geom g_postprocess;
 	ref_shader s_menu;
@@ -465,9 +463,7 @@ public:
 	void u_setrt(const ref_rt& _1, const ref_rt& _2, ID3DDepthStencilView* zb);
 	void u_setrt(u32 W, u32 H, ID3DRenderTargetView* _1, ID3DRenderTargetView* _2, ID3DRenderTargetView* _3,
 	             ID3DDepthStencilView* zb);
-	// DLSS-aware depth for the main viewport ONLY: dlss::SceneDepth() is global and always
-	// returns the main-sized DLSS depth; an SVP pass must bind its own (differently sized)
-	// depth or D3D drops the geometry and the scope renders white
+	// Main viewport only; an SVP pass must bind its own depth.
 	ID3DDepthStencilView* u_SceneDepth();
 	void u_calc_tc_noise(Fvector2& p0, Fvector2& p1);
 	void u_calc_tc_duality_ss(Fvector2& r0, Fvector2& r1, Fvector2& l0, Fvector2& l1);
@@ -570,9 +566,6 @@ public:
 	void phase_combine_volumetric();
 	void phase_pp();
 	void phase_dlss_postprocess();
-	// Fills zero motion-vector pixels with camera-only vectors from the
-	// scene depth. Returns the buffer the upscaler should consume (the
-	// hybrid RT, or the raw SSS buffer when the pass cannot run).
 	ref_rt& phase_upscaler_camera_mv();
 	ref_rt& PostprocessColor();
 	ref_rt& PostprocessSource();

@@ -20,16 +20,10 @@ xr_token fsr3_quality_token[] = {
 };
 u32 ps_r_dlss_preset = 0;
 float ps_r_dlss_sharpness = 0.0f;
-// 1 = Halton raster jitter for the temporal upscalers (default). 0 disables it
-// everywhere at once: shader binders, NGX/FSR3 jitterOffset and the SSS history
-// offsets read dlss::RasterJitter(), so a single gate keeps the whole chain
-// consistent. Use 0 when a shader pack does not apply ssfx_taa_jitter to all
-// deferred geometry - then the reconstruction no longer disagrees with the
-// raster and the "shifting geometry" artifact at upscaled resolutions is gone.
+// 1 (default) = Halton raster jitter, 0 = disable it for the whole jitter chain.
 int ps_r_upscaler_jitter = 1;
-// 1 = fill zero motion vectors with camera-only vectors from scene depth
-// (default; modded packs may not export MVs for every deferred material),
-// 2 = force camera-only vectors, 0 = raw shader-pack buffer
+// 1 (default) = fill zero motion vectors with camera-only vectors from depth,
+// 2 = force camera-only, 0 = raw shader-pack buffer.
 int ps_r__upscaler_camera_mv = 1;
 xr_token dlss_preset_token[] = {
     {"default", 0}, {"j", 10}, {"k", 11}, {"l", 12}, {"m", 13}, {nullptr, 0}

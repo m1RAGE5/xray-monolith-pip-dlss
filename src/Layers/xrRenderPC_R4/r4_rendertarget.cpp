@@ -116,12 +116,7 @@ public:
     }
 };
 
-// Camera-only motion vectors from scene depth. Modded shader packs do not
-// export MVs for every deferred material; the temporal reconstruction then
-// glues the silent surfaces to the screen (the world slides against the
-// camera while the patched shaders stay put). The pass reads the SSS buffer,
-// rebuilds the camera component where it is zero and writes the hybrid into
-// its own target - the SSS buffer itself is never modified.
+// Camera-only motion vectors from scene depth for the temporal upscaler fallback.
 class CBlender_upscaler_camera_mv : public IBlender
 {
 public:
@@ -148,9 +143,7 @@ void CRenderTarget::set_viewport_size(ID3DDeviceContext * dev, float w, float h)
 	dev->RSSetViewports(1, custom_viewport);
 }
 
-// DLSS-aware depth, main viewport only: the global dlss::SceneDepth() always returns
-// the main-sized DLSS depth buffer, an SVP pass must bind its own (differently sized)
-// depth or D3D drops the geometry and the scope renders white
+// Main viewport only; an SVP pass must bind its own depth.
 ID3DDepthStencilView* CRenderTarget::u_SceneDepth()
 {
 	return (this == RImplementation.TargetMain) ? dlss::SceneDepth() : baseZB;
@@ -1135,9 +1128,7 @@ CRenderTarget::CRenderTarget(LPCSTR name, u32 width, u32 height)
 
 	//SMAA
 	{
-		// pip per-target size: the SVP target must size its SMAA chain at its own
-		// Width/Height, dlss::RenderWidth() is the MAIN render size and leaves the
-		// SVP with display-sized SMAA RTs the pass then samples out of bounds
+		// Per-target size: the SVP needs its own SMAA chain.
 		u32 w = isMain ? dlss::RenderWidth() : Width;
 		u32 h = isMain ? dlss::RenderHeight() : Height;
 
@@ -1174,7 +1165,6 @@ CRenderTarget::CRenderTarget(LPCSTR name, u32 width, u32 height)
 	{
 		u32 w = 0;
 		u32 h = 0;
-		// pip per-target size (see SMAA note above), the SVP needs its own half depth
 		if (RImplementation.o.ssao_half_data)
 		{
 			w = (isMain ? dlss::RenderWidth() : Width) / 2;
@@ -1552,9 +1542,7 @@ CRenderTarget::CRenderTarget(LPCSTR name, u32 width, u32 height)
 		s_dlss_postprocess.create(&blender, "dlss_postprocess");
 		CBlender_dlss_copy copy;
 		s_dlss_copy.create(&copy, "dlss_copy");
-		// Camera-MV fallback is optional: without the shader the engine
-		// keeps consuming the raw SSS buffer exactly like upstream. The
-		// SVP target never evaluates the upscaler, main view only.
+		// Optional: without the shader the engine consumes the raw SSS buffer.
 		string_path cameraMvFile;
 		if (isMain && FS.exist(cameraMvFile, "$game_shaders$", "r3\\upscaler_camera_mv", ".ps"))
 		{
