@@ -30,34 +30,7 @@ merged from three X-Ray Monolith development branches:
   * **requires SSS23** (Screen Space Shaders) for the motion vectors buffer.
 * **Shader Bus** (from upstream 2026.9.12) — named lanes for script ↔ shader communication,
   required for **Glossy Puddles**. Check: `shader_bus.version()` returns `2`.
-* All other modded exes and MT-branch features (see the README below).
-
-## Building
-
-### Option 1 — GitHub Actions (recommended)
-
-1. Fork this repository.
-2. Open the **Actions** tab → select the **MSBuild** workflow → **Run workflow**
-   (or simply push a commit to `main`).
-3. Wait for the build to finish (8 configurations, ~40–60 minutes).
-4. Download the ready artifacts/release: `STALKER-Anomaly-modded-exes-PiP-DLSS-MT_<date>.zip`.
-
-The release includes all 8 configurations: `DX11`, `DX10`, `DX9`, `DX8` and their `-AVX` variants.
-
-### Option 2 — locally (Visual Studio 2022)
-
-1. Install Visual Studio 2022 with the "Desktop development with C++" workload
-   (MSVC v143 components, Windows 10/11 SDK).
-2. Clone the repository **with submodules**:
-   ```
-   git clone --recurse-submodules <url>
-   ```
-3. Open `src/engine-vs2022.sln`.
-4. Select the `DX11-AVX | x64` configuration (or any other) and build.
-5. The resulting exes appear in `_build/_game/bin_dbg/`.
-
-To pack the gamedata, use `compressor/! compress_gamedata.cmd` —
-this produces `00_modded_exes_gamedata.db0` (PiP scripts/shaders/configs).
+* All other modded exes and MT-branch features.
 
 ## Installation (GAMMA)
 
@@ -85,7 +58,7 @@ this produces `00_modded_exes_gamedata.db0` (PiP scripts/shaders/configs).
 * DLSS-SR inside the scope image itself — the contract is stubbed (`SvpDlss.h`, the
   `r__svp_dlss` command), but the actual evaluation is not implemented: the scope is rendered
   at render-extent and scaled by the lens.
-* MT version: the full list of known MT-TEST issues is in the README below.
+* MT version: the full list of known MT-TEST issues is in the original [README](https://github.com/themrdemonized/xray-monolith/blob/all-in-one-vs2022-wpo/README.md).
 
 ## Merge Technical Details
 
