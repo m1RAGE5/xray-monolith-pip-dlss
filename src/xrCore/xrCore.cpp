@@ -141,7 +141,7 @@ void xrCore::_initialize(LPCSTR _ApplicationName, xrLogger::LogCallback cb, BOOL
 		Msg("'%s' build %d, %s\n", "xrCore", build_id, build_date);
 
 		// demonized: Print modded exes version
-		Msg("%s version %s\n", get_modded_exes_name(), get_modded_exes_version_string().c_str());
+		Msg("%s\n", get_modded_exes_name());
 		Msg("Game started: %s\n", timeInDMYHMSMMM().c_str());
 		EFS._initialize();
 #ifdef DEBUG

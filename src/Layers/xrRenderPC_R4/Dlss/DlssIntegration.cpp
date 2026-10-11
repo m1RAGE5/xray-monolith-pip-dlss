@@ -224,7 +224,13 @@ void BeginScene()
         haveCamera = true;
         SSManager.SetMipLODBias(ps_r__tf_Mipbias + log2f(float(RenderWidth()) / Device.dwWidth));
     }
-    rasterJitter = Active() ? Jitter(jitterIndex++, renderSize, {Device.dwWidth, Device.dwHeight}) : Offset{};
+    // One gate for the whole jitter chain: every consumer (ssfx_jitter and
+    // dlss_temporal_jitter binders, pos_decompress_params, NGX/FSR3
+    // jitterOffset) reads dlss::RasterJitter(), so turning it off here keeps
+    // the raster, the motion vectors and the reconstruction in agreement even
+    // when the active shader pack does not jitter every deferred shader.
+    rasterJitter = (Active() && ps_r_upscaler_jitter != 0)
+        ? Jitter(jitterIndex++, renderSize, {Device.dwWidth, Device.dwHeight}) : Offset{};
 }
 
 void EndScene(bool invalidateHistory)

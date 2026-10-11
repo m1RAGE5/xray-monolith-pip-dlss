@@ -125,8 +125,9 @@ int get_modded_exes_version() {
 }
 
 LPCSTR get_modded_exes_name() {
-	shared_str result = "Modded Exes MT-TEST";
-	return result.c_str();
+	// Matches the upstream themrdemonized 2026.9.12 base this fork extends:
+	// DLSS/FSR3 upscaling + MT branch + Immersive Bodycam PiP scopes.
+	return "2026.9.12 DLSS/FSR3 MT + Immersive Bodycam";
 }
 
 // demonized: get modded exes version

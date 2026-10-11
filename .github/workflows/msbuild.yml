@@ -199,7 +199,8 @@ jobs:
           ## What's Inside
           * X-Ray Monolith MT (upstream all-in-one-vs2022-wpo-mt, based on 2026.9.12) with Shader Bus
           * True Picture-in-Picture weapon scopes (objective-camera SVP, ported from asuparabekon/xray-monolith-bodycam)
-          * Native DX11 DLSS / FSR 3.1 upscaling (ported from brodrigz/xray-monolith 1.0.0)
+          * Native DX11 DLSS / FSR 3.1 upscaling (ported from brodrigz/xray-monolith 1.0.0);
+            To work, **require nvngx_dlss.dll in dlss-binaries and GAMMA patch** from [brodrigz modded binaries](https://github.com/brodrigz/xray-monolith/releases).
 
           ## Build
           * All 8 configurations: DX11/DX10/DX9/DX8 x86 baseline and AVX

@@ -12,7 +12,8 @@ merged from three X-Ray Monolith development branches:
 > [!NOTE]
 > The build is based on the **MT version** of the engine (what official releases call MT-TEST) —
 > both source modifications (bodycam and brodrigz) are themselves based on the MT branch.
-> In the main menu and build log it is labeled as MT-TEST.
+> The engine version string is **`2026.9.12 DLSS/FSR3 MT + Immersive Bodycam`** (shown in the
+> log and returned by `get_modded_exes_name()`).
 
 ## What's Inside
 
@@ -27,7 +28,12 @@ merged from three X-Ray Monolith development branches:
   * DLSS (NVIDIA NGX) and FSR 3.1 directly in DX11, no injectors and no DX12 bridge;
   * quality presets and DLSS preset selection, CAS sharpening;
   * PDA and wearable device screens rendered at native resolution after upscaling;
-  * **requires SSS23** (Screen Space Shaders) for the motion vectors buffer.
+  * **requires SSS23** (Screen Space Shaders) for the motion vectors buffer;
+  * `r__upscaler_jitter 0/1` (default 1) — Halton raster jitter toggle. If geometry
+    visibly shifts/wobbles at upscaled resolutions (e.g. FSR3 Quality) because the
+    active shader pack does not apply the jitter to every deferred shader, set it
+    to `0`: the raster, motion vectors and the temporal reconstruction stay in
+    agreement and the artifact disappears, at the cost of some edge AA.
 * **Shader Bus** (from upstream 2026.9.12) — named lanes for script ↔ shader communication,
   required for **Glossy Puddles**. Check: `shader_bus.version()` returns `2`.
 * All other modded exes and MT-branch features.
