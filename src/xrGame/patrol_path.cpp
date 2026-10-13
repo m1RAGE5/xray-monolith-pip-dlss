@@ -55,7 +55,7 @@ bool CPatrolPath::load_from_config(const CInifile* ini_paths, const LPCSTR patro
 	std::vector<std::string> points = splitStringMulti(points_csv, ",", false, true);
 
 	// Keep track of name <-> vertex_id association
-	xr_map<shared_str, u32> vertex_ids_by_name;
+	std::map<shared_str, u32> vertex_ids_by_name;
 
 	// Add patrol points
 	for (int idx = 0; idx < points.size(); idx++)
@@ -84,8 +84,8 @@ bool CPatrolPath::load_from_config(const CInifile* ini_paths, const LPCSTR patro
 		}
 
 		// Get list of vertices to link to
-		xr_string links_csv = ini_paths->r_string(patrol_name, links_csv_key.c_str());
-		xr_vector<xr_string> links = links_csv.SplitStringMulti(",", false, true);
+		LPCSTR links_csv = ini_paths->r_string(patrol_name, links_csv_key.c_str());
+		std::vector<std::string> links = splitStringMulti(links_csv, ",", false, true);
 
 		for (const std::string& link : links)
 		{
