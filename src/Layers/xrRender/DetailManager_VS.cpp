@@ -17,6 +17,9 @@ const int quant = 16384;
 const int c_hdr = 10;
 const int c_size = 4;
 
+// pip set by the main gbuffer pass while a SVP pass follows, the SVP drain then clears the set
+bool g_svp_defer_detail_clear = false;
+
 static D3DVERTEXELEMENT9 dwDecl[] =
 {
 	{0, 0, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0}, // pos
@@ -177,8 +180,9 @@ void CDetailManager::hw_Load_Shaders()
 	hwc_s_array = T1.get("array");
 }
 
-void CDetailManager::hw_Render()
+void CDetailManager::hw_Render(light* L)
 {
+	PROF_EVENT("CDetailManager::hw_Render");
 	// Render-prepare
 	//	Update timer
 	//	Can't use RDEVICE.fTimeDelta since it is smoothed! Don't know why, but smoothed value looks more choppy!
@@ -210,23 +214,28 @@ void CDetailManager::hw_Render()
 	RCache.set_c(&*hwc_consts, scale, scale, ps_r__Detail_l_aniso, ps_r__Detail_l_ambient); // consts
 	RCache.set_c(&*hwc_wave, wave.div(PI_MUL_2)); // wave
 	RCache.set_c(&*hwc_wind, dir1); // wind-dir
-	hw_Render_dump(&*hwc_array, 1, 0, c_hdr);
+	hw_Render_dump(&*hwc_array, 1, 0, c_hdr, L);
 
 	// Wave1
 	//wave.set				(1.f/3.f,		1.f/7.f,	1.f/5.f,	RDEVICE.fTimeGlobal*swing_current.speed);
 	wave.set(1.f / 3.f, 1.f / 7.f, 1.f / 5.f, m_time_pos);
 	RCache.set_c(&*hwc_wave, wave.div(PI_MUL_2)); // wave
 	RCache.set_c(&*hwc_wind, dir2); // wind-dir
-	hw_Render_dump(&*hwc_array, 2, 0, c_hdr);
+	hw_Render_dump(&*hwc_array, 2, 0, c_hdr, L);
 
 	// Still
 	RCache.set_c(&*hwc_s_consts, scale, scale, scale, 1.f);
 	RCache.set_c(&*hwc_s_xform, RDEVICE.mFullTransform);
-	hw_Render_dump(&*hwc_s_array, 0, 1, c_hdr);
+	hw_Render_dump(&*hwc_s_array, 0, 1, c_hdr, L);
 }
 
-void CDetailManager::hw_Render_dump(ref_constant x_array, u32 var_id, u32 lod_id, u32 c_offset)
+void CDetailManager::hw_Render_dump(ref_constant x_array, u32 var_id, u32 lod_id, u32 c_offset, light* L)
 {
+#if RENDER==R_R2
+	if (RImplementation.phase == CRender::PHASE_SMAP && var_id == 0)
+		return;
+#endif
+
 	RDEVICE.Statistic->RenderDUMP_DT_Count = 0;
 
 	// Matrices and offsets
@@ -249,6 +258,11 @@ void CDetailManager::hw_Render_dump(ref_constant x_array, u32 var_id, u32 lod_id
 #endif
 
 	VERIFY(objects.size()<=list.size());
+
+	// pip grass cull, only on the SVP gbuffer pass with the frustum armed, the main pass pays one bool
+	const bool svp_grass_cull = ps_r__svp_cull_grass && CDSGraphManager::svp_cull_active();
+	// pip the main-pass drain keeps the visible set when the SVP pass draws the scope grass second
+	extern bool g_svp_defer_detail_clear;
 
 	// Iterate
 	for (u32 O = 0; O < objects.size(); O++)
@@ -275,14 +289,32 @@ void CDetailManager::hw_Render_dump(ref_constant x_array, u32 var_id, u32 lod_id
 				for (; _iI != _iE; _iI++)
 				{
 					SlotItem& Instance = **_iI;
+
+					// pip drop grass instances off the scope cone, radius covers a blade past its root
+					if (svp_grass_cull && CDSGraphManager::svp_cull_reject_sphere(Instance.position, dm_slot_size))
+						continue;
+
+					if (!RImplementation.GMBase.is_sector_visible(RImplementation.pOutdoorSector))
+						continue;
+
+#if RENDER==R_R2
+					if (RImplementation.phase == CRender::PHASE_SMAP && L)
+					{
+						if (!L->GMLight.is_sector_visible(RImplementation.pOutdoorSector))
+							continue;
+
+						if (L->position.distance_to_sqr(Instance.position) >= _sqr(L->range))
+							continue;
+					}
+#endif
+
 					u32 base = dwBatch * 4;
 
 					// Build matrix ( 3x4 matrix, last row - color )
-					float scale = Instance.scale_calculated;
-					Fmatrix& M = Instance.mRotY;
-					c_storage[base + 0].set(M._11 * scale, M._21 * scale, M._31 * scale, M._41);
-					c_storage[base + 1].set(M._12 * scale, M._22 * scale, M._32 * scale, M._42);
-					c_storage[base + 2].set(M._13 * scale, M._23 * scale, M._33 * scale, M._43);
+					Fmatrix& M = Instance.mRotY_calculated;
+					c_storage[base+0].set(M._11, M._21, M._31, M._41);
+					c_storage[base+1].set(M._12, M._22, M._32, M._42);
+					c_storage[base+2].set(M._13, M._23, M._33, M._43);
 
 					// Build color
 #if RENDER==R_R1
@@ -329,14 +361,12 @@ void CDetailManager::hw_Render_dump(ref_constant x_array, u32 var_id, u32 lod_id
 			// Clean up
 			// KD: we must not clear vis on r2 since we want details shadows
 #if RENDER==R_R2
-			if (!psDeviceFlags2.test(rsGrassShadow) || ((ps_r2_ls_flags.test(R2FLAG_SUN_DETAILS) && (RImplementation.PHASE_SMAP ==
-					RImplementation.phase)) // phase smap with shadows
-				|| (ps_r2_ls_flags.test(R2FLAG_SUN_DETAILS) && (RImplementation.PHASE_NORMAL == RImplementation.phase)
-					&& (!RImplementation.is_sun())) // phase normal with shadows without sun
-				|| (!ps_r2_ls_flags.test(R2FLAG_SUN_DETAILS) && (RImplementation.PHASE_NORMAL == RImplementation.phase))
-			)) // phase normal without shadows
-#endif
+			if (!psDeviceFlags2.test(rsGrassShadow) || RImplementation.PHASE_NORMAL == RImplementation.phase) // phase normal without shadows
 			vis.clear_not_free();
+#else
+			if (!g_svp_defer_detail_clear)
+				vis.clear_not_free();
+#endif
 		}
 		vOffset += hw_BatchSize * Object.number_vertices;
 		iOffset += hw_BatchSize * Object.number_indices;

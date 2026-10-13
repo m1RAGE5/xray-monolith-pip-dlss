@@ -3,6 +3,16 @@
 #pragma once
 
 // Common
+extern ECORE_API u32 ps_r_dlss_quality;
+extern ECORE_API u32 ps_r_upscaler;
+extern ECORE_API u32 ps_r_fsr3_quality;
+extern ECORE_API u32 ps_r_dlss_preset;
+extern ECORE_API float ps_r_dlss_sharpness;
+// 0 disables the raster jitter for the temporal upscalers.
+extern ECORE_API int ps_r_upscaler_jitter;
+// Camera-only motion-vector fallback for the temporal upscaler:
+// 1 (default) fills zero vectors, 2 forces camera-only, 0 keeps the pack buffer.
+extern ECORE_API int ps_r__upscaler_camera_mv;
 extern ECORE_API float ps_ssfx_fog_scattering;
 extern ECORE_API Fvector4 ps_ssfx_motionblur;
 extern ECORE_API Fvector4 ps_ssfx_taa;
@@ -99,6 +109,7 @@ extern ECORE_API float ps_r__tf_Mipbias;
 enum
 {
 	RFLAG_NO_RAM_TEXTURES = (1 << 0),
+	RFLAG_HOM_DYNAMIC = (1 << 1),
 };
 
 extern ECORE_API Flags32 ps_r__common_flags;
@@ -126,6 +137,7 @@ enum
 // R2
 extern ECORE_API float ps_r2_ssaLOD_A;
 extern ECORE_API float ps_r2_ssaLOD_B;
+extern ECORE_API BOOL ps_r2_particle_dt;
 
 // R2-specific
 extern ECORE_API Flags32 ps_r2_ls_flags; // r2-only
@@ -175,7 +187,9 @@ extern ECORE_API float ps_r2_dhemi_sky_scale; // 1.5f
 extern ECORE_API float ps_r2_dhemi_light_scale; // 1.f
 extern ECORE_API float ps_r2_dhemi_light_flow; // .1f
 extern ECORE_API int ps_r2_dhemi_count; // 5
+extern ECORE_API int ps_r2_shadow_omnipart_vischeck;
 extern ECORE_API float ps_r2_slight_fade; // 1.f
+extern ECORE_API float ps_r2_shadow_lod_min; // 1.f
 extern ECORE_API int ps_r2_wait_sleep;
 extern ECORE_API int ps_r2_qsync;
 ////lvutner
@@ -184,6 +198,10 @@ extern ECORE_API Fvector ps_r2_drops_control; // r2-only
 extern ECORE_API int ps_r2_nightvision;
 extern ECORE_API int scope_fake_enabled; //crookr
 extern ECORE_API int scope_3D_fake_enabled; // Redotix99: for 3D Shader Based Scopes
+#include "svp_console.h" // true PiP svp cvars, the complete extern set
+extern ECORE_API Fvector4 scope_objective_lens_offset;
+extern ECORE_API int r__gpu_markers; // RenderDoc: per-batch GPU debug events + resource naming
+extern ECORE_API int r__shader_debug; // RenderDoc: compile shaders with D3DCOMPILE_DEBUG | SKIP_OPTIMIZATION
 extern ECORE_API int ps_r2_heatvision;			//--DSR-- HeatVision
 extern ECORE_API int heat_vision_cooldown;		//--DSR-- HeatVision
 extern ECORE_API float heat_vision_cooldown_time;	//--DSR-- HeatVision
@@ -215,6 +233,8 @@ extern ECORE_API float ps_r2_tnmp_w; // r2-only
 extern ECORE_API float ps_r2_tnmp_exposure; // r2-only
 extern ECORE_API float ps_r2_tnmp_gamma; // r2-only
 extern ECORE_API float ps_r2_tnmp_onoff; // r2-only
+
+extern ECORE_API float ps_r4_full_detail_distance_scale; // r4-only
 
 /* --- HDR10 parameters --- */
 extern ECORE_API float ps_r4_hdr10_whitepoint_nits; // r4-only
@@ -281,66 +301,70 @@ extern ECORE_API int ps_r3_dyn_wet_surf_sm_res; // 256
 
 extern ECORE_API int opt_static;
 extern ECORE_API int opt_dynamic;
+extern ECORE_API int ps_pfx_volumetric_mode;
+extern ECORE_API int ps_r__portal_traverse_stats;
 
-enum
+enum : u64
 {
-	R2FLAG_SUN = (1 << 0),
-	R2FLAG_SUN_FOCUS = (1 << 1),
-	R2FLAG_SUN_TSM = (1 << 2),
-	R2FLAG_SUN_DETAILS = (1 << 3),
-	R2FLAG_TONEMAP = (1 << 4),
-	R2FLAG_AA = (1 << 5),
-	R2FLAG_GI = (1 << 6),
-	R2FLAG_FASTBLOOM = (1 << 7),
-	R2FLAG_GLOBALMATERIAL = (1 << 8),
-	R2FLAG_ZFILL = (1 << 9),
-	R2FLAG_R1LIGHTS = (1 << 10),
-	R2FLAG_SUN_IGNORE_PORTALS = (1 << 11),
+	R2FLAG_SUN = (1ull << 0),
+	R2FLAG_SUN_FOCUS = (1ull << 1),
+	R2FLAG_SUN_TSM = (1ull << 2),
+	R2FLAG_SUN_DETAILS = (1ull << 3),
+	R2FLAG_TONEMAP = (1ull << 4),
+	R2FLAG_AA = (1ull << 5),
+	R2FLAG_GI = (1ull << 6),
+	R2FLAG_FASTBLOOM = (1ull << 7),
+	R2FLAG_GLOBALMATERIAL = (1ull << 8),
+	R2FLAG_ZFILL = (1ull << 9),
+	R2FLAG_R1LIGHTS = (1ull << 10),
+	R2FLAG_SUN_IGNORE_PORTALS = (1ull << 11),
 
-	R2FLAG_EXP_SPLIT_SCENE = (1 << 12),
-	R2FLAG_EXP_DONT_TEST_UNSHADOWED = (1 << 13),
-	R2FLAG_EXP_DONT_TEST_SHADOWED = (1 << 14),
+	R2FLAG_EXP_SPLIT_SCENE = (1ull << 12),
+	R2FLAG_EXP_DONT_TEST_UNSHADOWED = (1ull << 13),
+	R2FLAG_EXP_DONT_TEST_SHADOWED = (1ull << 14),
 
-	R2FLAG_USE_NVDBT = (1 << 15),
-	R2FLAG_USE_NVSTENCIL = (1 << 16),
+	R2FLAG_USE_NVDBT = (1ull << 15),
+	R2FLAG_USE_NVSTENCIL = (1ull << 16),
 
-	R2FLAG_EXP_MT_CALC = (1 << 17),
+	R2FLAG_EXP_MT_CALC = (1ull << 17),
 
-	R2FLAG_SOFT_WATER = (1 << 18),
+	R2FLAG_SOFT_WATER = (1ull << 18),
 	//	Igor: need restart
-	R2FLAG_SOFT_PARTICLES = (1 << 19),
+	R2FLAG_SOFT_PARTICLES = (1ull << 19),
 	//	Igor: need restart
-	R2FLAG_VOLUMETRIC_LIGHTS = (1 << 20),
-	R2FLAG_STEEP_PARALLAX = (1 << 21),
-	R2FLAG_DOF = (1 << 22),
+	R2FLAG_VOLUMETRIC_LIGHTS = (1ull << 20),
+	R2FLAG_STEEP_PARALLAX = (1ull << 21),
+	R2FLAG_DOF = (1ull << 22),
 
-	R1FLAG_DETAIL_TEXTURES = (1 << 23),
+	R1FLAG_DETAIL_TEXTURES = (1ull << 23),
 
-	R2FLAG_DETAIL_BUMP = (1 << 24),
+	R2FLAG_DETAIL_BUMP = (1ull << 24),
 
-	R3FLAG_DYN_WET_SURF = (1 << 25),
-	R3FLAG_VOLUMETRIC_SMOKE = (1 << 26),
+	R3FLAG_DYN_WET_SURF = (1ull << 25),
+	R3FLAG_VOLUMETRIC_SMOKE = (1ull << 26),
 
-	//R3FLAG_MSAA					= (1<<28),
-	R3FLAG_MSAA_HYBRID = (1 << 27),
-	R3FLAG_MSAA_OPT = (1 << 28),
-	R2FLAG_TERRAIN_PREPASS = (1 << 29),
-	R3FLAG_USE_DX10_1 = (1 << 30),
-	//R3FLAG_MSAA_ALPHATEST		= (1<<31),
+	//R3FLAG_MSAA					= (1ull<<28),
+	R3FLAG_MSAA_HYBRID = (1ull << 27),
+	R3FLAG_MSAA_OPT = (1ull << 28),
+	R2FLAG_TERRAIN_PREPASS = (1ull << 29),
+	R3FLAG_USE_DX10_1 = (1ull << 30),
+	R2FLAG_LIGHTS_DETAILS	= (1ull<<31),
+	R2FLAG_FAST_DETAILS_UPDATE = (1ull<<32)
+	//R3FLAG_MSAA_ALPHATEST		= (1ull<<31),
 };
 
-enum
+enum: u64
 {
-	R2FLAGEXT_SSAO_BLUR = (1 << 0),
-	R2FLAGEXT_SSAO_OPT_DATA = (1 << 1),
-	R2FLAGEXT_SSAO_HALF_DATA = (1 << 2),
-	R2FLAGEXT_SSAO_HBAO = (1 << 3),
-	R2FLAGEXT_SSAO_HDAO = (1 << 4),
-	R2FLAGEXT_ENABLE_TESSELLATION = (1 << 5),
-	R2FLAGEXT_WIREFRAME = (1 << 6),
-	R_FLAGEXT_HOM_DEPTH_DRAW = (1 << 7),
-	R2FLAGEXT_SUN_ZCULLING = (1 << 8),
-	R2FLAGEXT_SUN_OLD = (1 << 9),
+	R2FLAGEXT_SSAO_BLUR = (1ull << 0),
+	R2FLAGEXT_SSAO_OPT_DATA = (1ull << 1),
+	R2FLAGEXT_SSAO_HALF_DATA = (1ull << 2),
+	R2FLAGEXT_SSAO_HBAO = (1ull << 3),
+	R2FLAGEXT_SSAO_HDAO = (1ull << 4),
+	R2FLAGEXT_ENABLE_TESSELLATION = (1ull << 5),
+	R2FLAGEXT_WIREFRAME = (1ull << 6),
+	R_FLAGEXT_HOM_DEPTH_DRAW = (1ull << 7),
+	R2FLAGEXT_SUN_ZCULLING = (1ull << 8),
+	R2FLAGEXT_SUN_OLD = (1ull << 9),
 };
 
 enum
@@ -369,6 +393,15 @@ enum
 };
 
 //-Swartz
+
+// demonized:
+extern ECORE_API BOOL occq_debug;
+
+// Texture eviction system
+extern ECORE_API int ps_r__tex_evict_enabled;
+extern ECORE_API int ps_r__tex_evict_age_frames;
+extern ECORE_API int ps_r__tex_evict_batch_size;
+extern ECORE_API int ps_r__tex_evict_interval;
 
 extern void xrRender_initconsole();
 extern BOOL xrRender_test_hw();

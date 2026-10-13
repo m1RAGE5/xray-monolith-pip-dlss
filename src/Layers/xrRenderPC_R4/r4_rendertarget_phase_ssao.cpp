@@ -19,7 +19,7 @@ void CRenderTarget::phase_ssao()
 	// low/hi RTs
 	if (!RImplementation.o.dx10_msaa)
 	{
-		u_setrt(rt_ssao_temp, 0, 0, 0/*HW.pBaseZB*/);
+		u_setrt(rt_ssao_temp, 0, 0, 0/*dlss::SceneDepth()*/);
 	}
 	else
 	{
@@ -44,11 +44,11 @@ void CRenderTarget::phase_ssao()
 	fSSAOKernelSize /= tan(deg2rad(Device.fFOV));
 
 	// Fill VB
-	float scale_X = float(Device.dwWidth) * 0.5f / float(TEX_jitter);
-	float scale_Y = float(Device.dwHeight) * 0.5f / float(TEX_jitter);
+	float scale_X = float(RenderScreenWidth()) * 0.5f / float(TEX_jitter);
+	float scale_Y = float(RenderScreenHeight()) * 0.5f / float(TEX_jitter);
 
-	float _w = float(Device.dwWidth) * 0.5f;
-	float _h = float(Device.dwHeight) * 0.5f;
+	float _w = float(RenderScreenWidth()) * 0.5f;
+	float _h = float(RenderScreenHeight()) * 0.5f;
 
 	set_viewport(HW.pContext, _w, _h);
 
@@ -101,7 +101,7 @@ void CRenderTarget::phase_ssao()
 		//RCache.set_Stencil( FALSE, D3DCMP_EQUAL, 0x01, 0xff, 0 );
 	}
 
-	set_viewport(HW.pContext, float(Device.dwWidth), float(Device.dwHeight));
+	set_viewport(HW.pContext, float(RenderScreenWidth()), float(RenderScreenHeight()));
 
 	RCache.set_Stencil(FALSE);
 }
@@ -118,15 +118,15 @@ void CRenderTarget::phase_downsamp()
 	//Fvector2	p0,p1;
 	u32 Offset = 0;
 
-	u_setrt(rt_half_depth, 0, 0, 0/*HW.pBaseZB*/);
+	u_setrt(rt_half_depth, 0, 0, 0/*dlss::SceneDepth()*/);
 	FLOAT ColorRGBA[4] = {0.0f, 0.0f, 0.0f, 0.0f};
 	HW.pContext->ClearRenderTargetView(rt_half_depth->pRT, ColorRGBA);
-	u32 w = Device.dwWidth;
-	u32 h = Device.dwHeight;
+	u32 w = RenderScreenWidth();
+	u32 h = RenderScreenHeight();
 
 	if (RImplementation.o.ssao_half_data)
 	{
-		set_viewport(HW.pContext, float(Device.dwWidth) * 0.5f, float(Device.dwHeight) * 0.5f);
+		set_viewport(HW.pContext, float(RenderScreenWidth()) * 0.5f, float(RenderScreenHeight()) * 0.5f);
 		w /= 2;
 		h /= 2;
 	}
@@ -159,11 +159,12 @@ void CRenderTarget::phase_downsamp()
 	}
 
 	if (RImplementation.o.ssao_half_data)
-		set_viewport(HW.pContext, float(Device.dwWidth), float(Device.dwHeight));
+		set_viewport(HW.pContext, float(RenderScreenWidth()), float(RenderScreenHeight()));
 }
 
 void CRenderTarget::phase_ssfx_ao()
 {
+	PIX_EVENT(phase_ssfx_ao);
 
 	//Constants
 	u32 Offset = 0;
@@ -171,8 +172,8 @@ void CRenderTarget::phase_ssfx_ao()
 
 	float d_Z = EPS_S;
 	float d_W = 1.0f;
-	float w = float(Device.dwWidth);
-	float h = float(Device.dwHeight);
+	float w = float(RenderScreenWidth());
+	float h = float(RenderScreenHeight());
 
 	float ScaleFactor = std::min(std::max(ps_ssfx_ao.x, 1.0f), 8.0f);
 
@@ -210,7 +211,9 @@ void CRenderTarget::phase_ssfx_ao()
 	RCache.Render(D3DPT_TRIANGLELIST, Offset, 0, 4, 0, 2);
 
 	// Save AO frame
+	svp_copy_begin(SVP_CP_HIST, rt_copy_bytes(rt_ssfx_ao));
 	HW.pContext->CopyResource(rt_ssfx_ao->pTexture->surface_get(), rt_ssfx_temp->pTexture->surface_get());
+	svp_copy_end(SVP_CP_HIST);
 
 	//scale_X = w / (ScaleFactor * 2.0f);
 	//scale_Y = h / (ScaleFactor * 2.0f);
@@ -313,8 +316,8 @@ void CRenderTarget::phase_ssfx_il()
 
 	float d_Z = EPS_S;
 	float d_W = 1.0f;
-	float w = float(Device.dwWidth);
-	float h = float(Device.dwHeight);
+	float w = float(RenderScreenWidth());
+	float h = float(RenderScreenHeight());
 
 	float ScaleFactor = std::min(std::max(ps_ssfx_il.x, 1.0f), 8.0f);
 
@@ -351,7 +354,9 @@ void CRenderTarget::phase_ssfx_il()
 
 
 	// Save AO frame
+	svp_copy_begin(SVP_CP_HIST, rt_copy_bytes(rt_ssfx_il));
 	HW.pContext->CopyResource(rt_ssfx_il->pTexture->surface_get(), rt_ssfx_temp2->pTexture->surface_get());
+	svp_copy_end(SVP_CP_HIST);
 
 	//scale_X = w / ScaleFactor;
 	//scale_Y = h / ScaleFactor;

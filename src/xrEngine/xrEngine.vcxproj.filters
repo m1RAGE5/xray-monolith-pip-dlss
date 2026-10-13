@@ -210,6 +210,9 @@
     <ClInclude Include="Render.h">
       <Filter>Interfaces\Render</Filter>
     </ClInclude>
+    <ClInclude Include="RendererError.h">
+      <Filter>Interfaces\Render</Filter>
+    </ClInclude>
     <ClInclude Include="ICollidable.h">
       <Filter>Interfaces\Collidable</Filter>
     </ClInclude>
@@ -257,6 +260,12 @@
     </ClInclude>
     <ClInclude Include="Rain.h">
       <Filter>Game API\Environment\Effects</Filter>
+    </ClInclude>
+    <ClInclude Include="renderdoc_app.h">
+      <Filter>General</Filter>
+    </ClInclude>
+    <ClInclude Include="renderdoc_integration.h">
+      <Filter>General</Filter>
     </ClInclude>
     <ClInclude Include="thunderbolt.h">
       <Filter>Game API\Environment\Effects</Filter>
@@ -378,6 +387,15 @@
     <ClInclude Include="xr_ioc_cmd.h">
       <Filter>Engine\Console\commands</Filter>
     </ClInclude>
+    <ClInclude Include="svp_console_policy.h">
+      <Filter>Engine\Console\commands</Filter>
+    </ClInclude>
+    <ClInclude Include="svp_gameplay_cvars.h">
+      <Filter>Engine\Console\commands</Filter>
+    </ClInclude>
+    <ClInclude Include="svp_crash_context.h">
+      <Filter>Engine\Console\commands</Filter>
+    </ClInclude>
     <ClInclude Include="Engine.h">
       <Filter>Engine\Core</Filter>
     </ClInclude>
@@ -409,6 +427,9 @@
       <Filter>Engine\text_editor\edit_actions</Filter>
     </ClInclude>
     <ClInclude Include="device.h">
+      <Filter>RenderRef\Execution &amp; 3D\Device</Filter>
+    </ClInclude>
+    <ClInclude Include="svp_state.h">
       <Filter>RenderRef\Execution &amp; 3D\Device</Filter>
     </ClInclude>
     <ClInclude Include="MonitorList.h">
@@ -498,6 +519,7 @@
     <ClInclude Include="GIFResource.h">
       <Filter>Render\Execution &amp; 3D\Shaders\Textures</Filter>
     </ClInclude>
+    <ClInclude Include="EngineThreading.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="defines.cpp">
@@ -577,6 +599,9 @@
     </ClCompile>
     <ClCompile Include="Rain.cpp">
       <Filter>Game API\Environment\Effects</Filter>
+    </ClCompile>
+    <ClCompile Include="renderdoc_integration.cpp">
+      <Filter>General</Filter>
     </ClCompile>
     <ClCompile Include="thunderbolt.cpp">
       <Filter>Game API\Environment\Effects</Filter>
@@ -688,6 +713,15 @@
     </ClCompile>
     <ClCompile Include="xr_ioc_cmd.cpp">
       <Filter>Engine\Console\commands</Filter>
+    </ClCompile>
+    <ClCompile Include="svp_gameplay_cvars.cpp">
+      <Filter>Engine\Console\commands</Filter>
+    </ClCompile>
+    <ClCompile Include="svp_crash_context.cpp">
+      <Filter>Engine\Console\commands</Filter>
+    </ClCompile>
+    <ClCompile Include="svp_state.cpp">
+      <Filter>RenderRef\Execution &amp; 3D\Device</Filter>
     </ClCompile>
     <ClCompile Include="Engine.cpp">
       <Filter>Engine\Core</Filter>
@@ -815,6 +849,7 @@
     <ClCompile Include="GIFResource.cpp">
       <Filter>Render\Execution &amp; 3D\Shaders\Textures</Filter>
     </ClCompile>
+    <ClCompile Include="EngineThreading.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="splash_xrcs_en.bmp">

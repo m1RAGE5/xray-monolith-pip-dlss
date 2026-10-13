@@ -5,7 +5,8 @@
 
 //////////////////////////////////////////////////////////////////////////
 // definition ("Renderable")
-class ENGINE_API IRenderable
+class ENGINE_API IRenderable:
+	public ISpatialOwner
 {
 public:
 	struct
@@ -21,7 +22,7 @@ public:
 	virtual ~IRenderable();
 	IRender_ObjectSpecific* renderable_ROS();
 	BENCH_SEC_SCRAMBLEVTBL2
-	virtual void renderable_Render() = 0;
+	virtual void renderable_Render(IDSGraphManager* DM) = 0;
 	virtual BOOL renderable_ShadowGenerate() { return FALSE; };
 	virtual BOOL renderable_ShadowReceive() { return FALSE; };
 
@@ -29,6 +30,7 @@ public:
 	virtual float GetTransparency() { return 0.0; }		//--DSR-- HeatVision
 	virtual float GetGlowing() { return 0.0; }			//--DSR-- SilencerOverheat
 
+	virtual IRenderable* dcast_Renderable() override { return this; }
 };
 
 #endif // IRENDERABLE_H_INCLUDED

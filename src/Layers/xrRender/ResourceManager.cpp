@@ -1,8 +1,9 @@
-// TextureManager.cpp: implementation of the CResourceManager class.
+
 //
 //////////////////////////////////////////////////////////////////////
 
 #include "stdafx.h"
+#include "xrRender_console.h"
 #pragma hdrstop
 
 #pragma warning(disable:4995)
@@ -13,10 +14,103 @@
 #include "tss.h"
 #include "blenders\blender.h"
 #include "blenders\blender_recorder.h"
-#include <tbb\parallel_for_each.h>
+#include "../../xrCore/_thread_types.h"
+
+#if RENDER == R_R4
+#include "svp_console.h"
+#endif
 
 //	Already defined in Texture.cpp
 void fix_texture_name(LPSTR fn);
+
+#if RENDER == R_R4
+namespace
+{
+constexpr LPCSTR scope_glass_materials_section = "scope_glass_materials";
+
+bool normalize_first_texture(LPCSTR textures, string_path& result)
+{
+	if (!textures)
+		return false;
+
+	while (*textures && isspace(static_cast<unsigned char>(*textures)))
+		++textures;
+
+	u32 length = 0;
+	while (textures[length] && textures[length] != ',' && length + 1 < sizeof(result))
+	{
+		result[length] = textures[length] == '/' ? '\\' : textures[length];
+		++length;
+	}
+
+	while (length && isspace(static_cast<unsigned char>(result[length - 1])))
+		--length;
+
+	result[length] = '\0';
+	if (!length)
+		return false;
+
+	xr_strlwr(result);
+	fix_texture_name(result);
+	return result[0] != '\0';
+}
+
+void normalize_texture_name(string_path& texture)
+{
+	for (LPSTR it = texture; *it; ++it)
+		if (*it == '/')
+			*it = '\\';
+
+	xr_strlwr(texture);
+	fix_texture_name(texture);
+}
+
+bool configured_scope_glass_texture(LPCSTR texture, string_path& replacement)
+{
+	if (!pSettings || !pSettings->section_exist(scope_glass_materials_section))
+		return false;
+
+	const CInifile::Sect& materials = pSettings->r_section(scope_glass_materials_section);
+	for (const CInifile::Item& material : materials.Data)
+	{
+		if (_GetItemCount(*material.second, '|') != 2)
+			continue;
+
+		string_path configured = {};
+		_GetItem(*material.second, 0, configured, '|');
+		normalize_texture_name(configured);
+		if (xr_strcmp(texture, configured) != 0)
+			continue;
+
+		_GetItem(*material.second, 1, replacement, '|');
+		normalize_texture_name(replacement);
+		return replacement[0] != '\0';
+	}
+
+	return false;
+}
+
+bool route_scope_glass_material(LPCSTR shader, LPCSTR textures, string1024& routed_textures)
+{
+	if (!ps_r__scope_glass || !shader || stricmp(shader, "models\\model") != 0)
+		return false;
+
+	string_path texture = {};
+	string_path replacement = {};
+	if (!normalize_first_texture(textures, texture) || !configured_scope_glass_texture(texture, replacement))
+		return false;
+
+	xr_strcpy(routed_textures, replacement);
+	if (LPCSTR remaining_textures = strchr(textures, ','))
+		xr_strcat(routed_textures, remaining_textures);
+
+	if (ps_r__scope_glass_debug)
+		Msg("[scope-glass] %s -> %s", texture, replacement);
+
+	return true;
+}
+}
+#endif
 
 /*
 void fix_texture_name(LPSTR fn)
@@ -153,6 +247,7 @@ ShaderElement* CResourceManager::_CreateElement(ShaderElement& S)
 
 	// Create _new_ entry
 	ShaderElement* N = xr_new<ShaderElement>(S);
+	//N->_copy(S);
 	N->dwFlags |= xr_resource_flagged::RF_REGISTERED;
 	v_elements.push_back(N);
 	return N;
@@ -271,10 +366,8 @@ Shader* CResourceManager::_cpp_Create(IBlender* B, LPCSTR s_shader, LPCSTR s_tex
 		if (S.equal(v_shaders[it])) return v_shaders[it];
 
 	// Create _new_ entry
-	Shader* N = xr_new<Shader>(S);
-	N->dwFlags |= xr_resource_flagged::RF_REGISTERED;
-	v_shaders.push_back(N);
-	return N;
+	Shader* ResultShader = _CreateShader(&S);
+	return ResultShader;
 }
 
 Shader* CResourceManager::_cpp_Create(LPCSTR s_shader, LPCSTR s_textures, LPCSTR s_constants, LPCSTR s_matrices)
@@ -329,6 +422,12 @@ Shader* CResourceManager::Create(LPCSTR s_shader, LPCSTR s_textures, LPCSTR s_co
 	if (!g_dedicated_server)
 #endif
 	{
+#if RENDER == R_R4
+		string1024 scope_glass_textures = {};
+		if (route_scope_glass_material(s_shader, s_textures, scope_glass_textures))
+			s_textures = scope_glass_textures;
+#endif
+
 		//	TODO: DX10: When all shaders are ready switch to common path
 #if defined(USE_DX10) || defined(USE_DX11)
 		if (_lua_HasShader(s_shader))
@@ -370,9 +469,14 @@ Shader* CResourceManager::Create(LPCSTR s_shader, LPCSTR s_textures, LPCSTR s_co
 
 void CResourceManager::Delete(const Shader* S)
 {
+	if (0 == (S->dwFlags & xr_resource_flagged::RF_REGISTERED))
+		return;
+
 	xrCriticalSectionGuard guard(creationGuard);
-	if (0 == (S->dwFlags & xr_resource_flagged::RF_REGISTERED)) return;
-	if (reclaim(v_shaders, S)) return;
+
+	if (reclaim(v_shaders, S))
+		return;
+
 	Msg("! ERROR: Failed to find complete shader");
 }
 
@@ -385,7 +489,25 @@ void CResourceManager::DeferredUpload()
 	CTimer timer;
 	timer.Start();
 
-	tbb::parallel_for_each(m_textures, [&](auto m_tex) { m_tex.second->Load(); });
+	// Snapshot the pointers under creationGuard so this walk doesn't run
+	// concurrently with _CreateTexture's insert into the same std::map, then
+	// release the lock before running Load() across PPL worker threads (some
+	// of which may themselves need creationGuard, e.g. via _CreateTexture).
+	xr_vector<CTexture*> textures;
+	{
+		xrCriticalSectionGuard guard(creationGuard);
+		textures.reserve(m_textures.size());
+		for (auto& pair : m_textures)
+			textures.push_back(pair.second);
+	}
+
+	static DWORD this_thread_id = 0;
+	this_thread_id = GetCurrentThreadId();
+	xr_parallel_foreach(textures.begin(), textures.end(), [](CTexture* texture)
+	{
+		if (this_thread_id != GetCurrentThreadId()) { PROF_THREAD("X-Ray PPL Thread") }
+		texture->Load();
+	});
 
 	Msg("texture loading time: %d", timer.GetElapsed_ms());
 }
@@ -395,7 +517,53 @@ void CResourceManager::DeferredUnload()
 	if (!RDEVICE.b_is_Ready)
 		return;
 
-	tbb::parallel_for_each(m_textures, [&](auto m_tex) { m_tex.second->Unload(); });
+	xr_vector<CTexture*> textures;
+	{
+		xrCriticalSectionGuard guard(creationGuard);
+		textures.reserve(m_textures.size());
+		for (auto& pair : m_textures)
+			textures.push_back(pair.second);
+	}
+
+	xr_parallel_foreach(textures.begin(), textures.end(), [](CTexture* texture)
+	{
+		texture->Unload();
+	});
+}
+
+void CResourceManager::UnloadAllTexturesOnLevelUnload()
+{
+	if (!RDEVICE.b_is_Ready)
+		return;
+
+    xrCriticalSectionGuard guard(creationGuard);
+
+    xr_vector<CTexture*> textures_to_unload;
+    textures_to_unload.reserve(m_textures.size());
+
+    for (const auto& pair : m_textures)
+    {
+        CTexture* texture = pair.second;
+        if (!texture)
+            continue;
+
+        if (texture->flags.bUser)
+            continue;
+
+        // Keep $ textures alive since they are bound to runtime render targets or other important parts
+        if (strstr(*texture->cName, "$"))
+            continue;
+
+        // Keep UI textures
+        LPCSTR name = pair.first;
+        if (strncmp(name, "ui\\", 3) == 0 || strncmp(name, "ui/", 3) == 0)
+            continue;
+
+        textures_to_unload.push_back(texture);
+    }
+
+    for (CTexture* texture : textures_to_unload)
+        texture->Unload();
 }
 
 #ifdef _EDITOR
@@ -417,6 +585,26 @@ void	CResourceManager::ED_UpdateTextures(AStringVec* names)
 	// DeferredUpload	();
 }
 #endif
+
+Shader* CResourceManager::_CreateShader(Shader* InShader)
+{
+	xrCriticalSectionGuard guard(creationGuard);
+
+	// Search equal in shaders array
+	for (Shader* it : v_shaders)
+	{
+		if (InShader->equal(it))
+			return it;
+	}
+
+	// Create _new_ entry
+	Shader* N = xr_new<Shader>(*InShader);
+	//N->_copy(*InShader);
+	N->dwFlags |= xr_resource_flagged::RF_REGISTERED;
+	v_shaders.push_back(N);
+
+	return N;
+}
 
 void CResourceManager::_GetMemoryUsage(u32& m_base, u32& c_base, u32& m_lmaps, u32& c_lmaps)
 {
@@ -472,6 +660,116 @@ void CResourceManager::Evict()
 	CHK_DX(HW.pDevice->EvictManagedResources());
 #endif	//	USE_DX10
 }
+
+void CResourceManager::EvictStalledTextures() {
+#if defined(USE_DX11)
+  if (!ps_r__tex_evict_enabled)
+    return;
+#ifdef DEBUG
+  Msg("* [TexEvict] pass called, frame=%u", RDEVICE.dwFrame);
+#endif // DEBUG
+  if (!RDEVICE.b_is_Ready)
+    return;
+
+  u32 cur_frame = RDEVICE.dwFrame;
+  u32 max_age   = (u32)ps_r__tex_evict_age_frames;
+#ifdef DEBUG
+  u32 evicted      = 0;
+  u32 evicted_kb   = 0;
+  u32 skip_user    = 0;
+  u32 skip_name    = 0;
+  u32 skip_unloaded = 0;
+  u32 skip_refs    = 0;
+  u32 skip_recent  = 0;
+#endif // DEBUG
+
+  static xr_string s_evict_cursor;
+  const u32 batch_size = (u32)ps_r__tex_evict_batch_size;
+
+  creationGuard.Enter();
+
+  map_Texture::iterator I;
+  if (s_evict_cursor.empty()) {
+    I = m_textures.begin();
+  } else {
+    I = m_textures.lower_bound(s_evict_cursor.c_str());
+    if (I == m_textures.end())
+      I = m_textures.begin();
+  }
+
+  u32 scanned = 0;
+  for (; I != m_textures.end() && scanned < batch_size; ++I, ++scanned) {
+    CTexture *tex = I->second;
+    if (tex->flags.bUser) {
+#ifdef DEBUG
+      skip_user++;
+#endif // DEBUG
+      continue;
+    }
+    if (tex->cName.size() && strstr(tex->cName.c_str(), "$user$")) {
+#ifdef DEBUG
+      skip_user++;
+#endif // DEBUG
+      continue;
+    }
+    if (tex->cName.size() && strstr(tex->cName.c_str(), "$null")) {
+#ifdef DEBUG
+      skip_user++;
+#endif // DEBUG
+      continue;
+    }
+    if (!tex->flags.bLoaded) {
+#ifdef DEBUG
+      skip_unloaded++;
+#endif // DEBUG
+      continue;
+    }
+    // UI textures — PDA, inventory icons, etc. — must never be evicted
+    LPCSTR name = I->first;
+    if (strncmp(name, "ui\\", 3) == 0 || strncmp(name, "ui/", 3) == 0) {
+#ifdef DEBUG
+      skip_name++;
+#endif // DEBUG
+      continue;
+    }
+    if (tex->dwReference.load(std::memory_order_relaxed) > 1) {
+#ifdef DEBUG
+      u32 refs = tex->dwReference.load(std::memory_order_relaxed);
+      if (refs > 2)
+        Msg("* [TexEvict] stuck: [%4d] %s", refs, tex->cName.c_str());
+      skip_refs++;
+#endif // DEBUG
+      continue;
+    }
+    if (cur_frame - tex->dwLastUsedFrame < max_age) {
+#ifdef DEBUG
+      skip_recent++;
+#endif // DEBUG
+      continue;
+    }
+
+#ifdef DEBUG
+    evicted_kb += tex->flags.MemoryUsage / 1024;
+#endif // DEBUG
+    tex->Unload();
+#ifdef DEBUG
+    evicted++;
+#endif // DEBUG
+  }
+
+  s_evict_cursor = (I != m_textures.end()) ? xr_string(I->first) : xr_string();
+
+  creationGuard.Leave();
+
+#ifdef DEBUG
+  Msg("* [TexEvict] frame=%u total=%u scanned=%u evicted=%u skip_user=%u "
+      "skip_name=%u skip_unloaded=%u skip_refs=%u skip_recent=%u freed_kb=%u",
+      cur_frame, (u32)m_textures.size(), scanned, evicted, skip_user, skip_name,
+      skip_unloaded, skip_refs, skip_recent, evicted_kb);
+#endif // DEBUG
+#endif
+}
+
 
 /*
 BOOL	CResourceManager::_GetDetailTexture(LPCSTR Name,LPCSTR& T, R_constant_setup* &CS)

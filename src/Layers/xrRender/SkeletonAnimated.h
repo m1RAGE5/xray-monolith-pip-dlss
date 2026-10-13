@@ -16,6 +16,7 @@ public:
 	typedef svector<CBlend*, MAX_BLENDED> BlendSVec;
 	typedef BlendSVec::iterator BlendSVecIt;
 	typedef BlendSVec::const_iterator BlendSVecCIt;
+	xrSRWLock blend_lock;
 private:
 	BlendSVec Blend;
 public:
@@ -28,9 +29,10 @@ public:
 
 	u32 mem_usage()
 	{
+		xrSRWLockGuard guard(&blend_lock, true);
 		u32 sz = sizeof(*this);
-		for (BlendSVecIt it = Blend.begin(); it != Blend.end(); it++)
-			sz += (*it)->mem_usage();
+		for (CBlend* B : Blend)
+			sz += B->mem_usage();
 		return sz;
 	}
 };
@@ -129,7 +131,7 @@ public:
 	u16 LL_MotionsSlotCount() { return (u16)m_Motions.size(); }
 	const shared_motions& LL_MotionsSlot(u16 idx) { return m_Motions[idx].motions; }
 
-	IC CMotionDef* LL_GetMotionDef(MotionID id) { return m_Motions[id.slot].motions.motion_def(id.idx); }
+	IC CMotionDef* LL_GetMotionDef(MotionID id) { return id.valid() ? m_Motions[id.slot].motions.motion_def(id.idx) : nullptr; }
 	IC CMotion* LL_GetRootMotion(MotionID id) { return &m_Motions[id.slot].bone_motions[iRoot]->at(id.idx); }
 	IC CMotion* LL_GetMotion(MotionID id, u16 bone_id) { return &m_Motions[id.slot].bone_motions[bone_id]->at(id.idx); }
 
@@ -175,7 +177,8 @@ public:
 	MotionID ID_FX(LPCSTR N);
 	MotionID ID_FX_Safe(LPCSTR N);
 	CBlend* PlayFX(LPCSTR N, float power_scale);
-	CBlend* PlayFX(MotionID M, float power_scale);
+	CBlend* PlayFX(MotionID M, float power_scale) override;
+	CBlend* PlayFX_Safe (LPCSTR N, float power_scale) override;
 
 	const CPartition& partitions() const { return *m_Partition; };
 

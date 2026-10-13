@@ -5,6 +5,9 @@
 
 # exclude binaries and temporary files
 _build/
+# Downloaded upscaler runtimes and machine-specific shader dependency files
+nvngx_dlss*.dll
+/sdk/FSR3/shaders/*.d
 /src/*.tss
 /**/x64/
 **/.vs/
@@ -33,8 +36,14 @@ src/3rd party/luajit-2/src/host/*.exe
 
 # compressor runtime artifacts
 compressor/engine.log
+
+# local build logs
+/build_*.log
 compressor/mod/
+compressor/mod.db0
 
 # emacs temp file
 \#*\#
 *~
+
+/tests/

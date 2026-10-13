@@ -13,9 +13,11 @@ class CGamePersistent :
 	public IGame_Persistent,
 	public IEventReceiver
 {
+	using inherited = IGame_Persistent;
+
 	// ambient particles
-	CParticlesObject* ambient_particles;
-	u32 ambient_sound_next_time [32]; //max snd channels
+	intrusive_ptr<CParticlesObject> ambient_particles;
+	xr_vector<u32> ambient_sound_next_time; //max snd channels
 	u32 ambient_effect_next_time;
 	u32 ambient_effect_stop_time;
 
@@ -31,7 +33,9 @@ class CGamePersistent :
 	EVENT eQuickLoad;
 	Fvector m_dof [4]; // 0-dest 1-current 2-from 3-original
 
-	fastdelegate::FastDelegate0<> m_intro_event;
+	xr_delegate<void()> m_intro_event;
+
+    xrCriticalSection loadTitleCs;
 
 	void xr_stdcall start_logo_intro();
 	void xr_stdcall update_logo_intro();
@@ -78,6 +82,7 @@ public:
 
 	virtual void _BCL OnFrame();
 	virtual void ImGui_OnRender(LPCSTR name);
+	virtual bool OnModelLoadFatal(LPCSTR message);
 	virtual void OnEvent(EVENT E, u64 P1, u64 P2);
 
 	virtual void UpdateGameType();

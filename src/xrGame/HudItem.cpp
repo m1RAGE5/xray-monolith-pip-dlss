@@ -116,10 +116,10 @@ void CHudItem::PlaySound(LPCSTR alias, const Fvector& position, u8 index)
 
 //-Alundaio
 
-void CHudItem::renderable_Render()
+void CHudItem::renderable_Render(IDSGraphManager* DM)
 {
 	UpdateXForm();
-	BOOL _hud_render = ::Render->get_HUD() && GetHUDmode();
+	BOOL _hud_render = DM->get_HUD() && GetHUDmode();
 
 	if (_hud_render && !IsHidden())
 	{
@@ -128,16 +128,18 @@ void CHudItem::renderable_Render()
 	{
 		if (!object().H_Parent() || (!_hud_render && !IsHidden()))
 		{
-			on_renderable_Render();
+			on_renderable_Render(DM);
 			debug_draw_firedeps();
 		}
 		else if (object().H_Parent())
 		{
 			CInventoryOwner* owner = smart_cast<CInventoryOwner*>(object().H_Parent());
-			VERIFY(owner);
-			CInventoryItem* self = smart_cast<CInventoryItem*>(this);
-			if (owner->attached(self))
-				on_renderable_Render();
+            if (owner)
+            {
+                CInventoryItem* self = smart_cast<CInventoryItem*>(this);
+                if (owner->attached(self))
+                    on_renderable_Render(DM);
+            }			
 		}
 	}
 }
@@ -856,7 +858,7 @@ bool CHudItem::TryPlayAnimIdle()
 
 			CEntity::SEntityState st;
 			pActor->g_State(st);
-			if (st.bSprint)
+			if (st.bSprint && pActor->cam_BodycamSprintAnimReady())
 			{
 				PlayAnimIdleSprint();
 				return true;
@@ -1107,7 +1109,26 @@ void CHudItem::Ray(SPickParam& pp)
 		);
 
 		// Transform from non-offset HUD space to world space
-		Device.hud_to_world(matrix, proj);
+		// the pick remaps through the actor's real eye under demo_record
+		if (Level().Cameras().GetCamEffector(cefDemo))
+		{
+			CCameraBase* c = const_cast<CActor*>(pActor)->cam_FirstEye();
+			Fmatrix view;
+			view.build_camera_dir(c->vPosition, c->vDirection, c->vNormal);
+			Fmatrix inv_view;
+			inv_view.invert(view);
+			Fmatrix mproj;
+			mproj.build_projection(
+				deg2rad(c->f_fov),
+				Device.fASPECT,
+				R_VIEWPORT_NEAR,
+				g_pGamePersistent->Environment().CurrentEnv->far_plane);
+			Fmatrix inv_proj;
+			inv_proj.invert(mproj);
+			Device.hud_to_world(matrix, proj, view, inv_view, inv_proj);
+		}
+		else
+			Device.hud_to_world(matrix, proj);
 	}
 
 	// Detect wall penetration
@@ -1227,7 +1248,7 @@ CAnonHudItem::~CAnonHudItem() { }
 
 void CAnonHudItem::UpdateXForm() { }
 
-void CAnonHudItem::on_renderable_Render() { }
+void CAnonHudItem::on_renderable_Render(IDSGraphManager* DM) { }
 
 #ifdef ATTACHMENT_HUD_VISBOX
 void VisualCallbackHud(IKinematics* tpKinematics)

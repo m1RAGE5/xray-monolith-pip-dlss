@@ -27,7 +27,7 @@ CScriptIniFile* reload_system_ini()
 	pSettings->Destroy(const_cast<CInifile*>(pSettings));
 	string_path fname;
 	FS.update_path(fname, "$game_config$", "system.ltx");
-	CInifile::InvalidateCache(fname);
+	CInifile::InvalidateCache();
 	pSettings = xr_new<CInifile>(fname);
 	return ((CScriptIniFile*)pSettings);
 }
@@ -125,8 +125,9 @@ int get_modded_exes_version() {
 }
 
 LPCSTR get_modded_exes_name() {
-	shared_str result = "Modded Exes";
-	return result.c_str();
+	// Matches the upstream themrdemonized 2026.9.12 base this fork extends:
+	// DLSS/FSR3 upscaling + MT branch + Immersive Bodycam PiP scopes.
+	return "2026.9.12 DLSS/FSR3 MT + Immersive Bodycam";
 }
 
 // demonized: get modded exes version

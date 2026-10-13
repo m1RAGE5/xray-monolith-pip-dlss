@@ -1,6 +1,6 @@
 #pragma once
 
-#include <fastdelegate/fastdelegate.h>
+#include "xr_delegate.h"
 
 // refs
 class CInifile;
@@ -78,7 +78,7 @@ public:
 	typedef Root::const_iterator RootCIt;
 
 #ifndef _EDITOR
-	typedef fastdelegate::FastDelegate1<LPCSTR, bool> allow_include_func_t;
+	typedef xr_delegate<bool(LPCSTR)> allow_include_func_t;
 #endif
 	static CInifile* Create(LPCSTR szFileName, BOOL ReadOnly = TRUE);
 	static void Destroy(CInifile*);
@@ -123,7 +123,7 @@ public:
 
 	// DLTX
 	void DLTX_print(LPCSTR sec, LPCSTR line);
-	LPCSTR DLTX_getFilenameOfLine(LPCSTR sec, LPCSTR line);
+	LPCSTR DLTX_getFilenameOfLine(LPCSTR sec, LPCSTR line) const;
 	bool DLTX_isOverride(LPCSTR sec, LPCSTR line);
 	
 private:
@@ -134,6 +134,7 @@ public:
 	static void InvalidateCache(LPCSTR path = nullptr);
 	static void CInifile::GetCacheStats(u64& files_cached, u64& total_bytes, u64& section_count)
 	{
+        xrCriticalSectionGuard g(CacheCS);
 		total_bytes = 0;
 		section_count = 0;
 		files_cached = CachedData.size();
@@ -271,6 +272,9 @@ public:
 	u32 section_count() const;
 	BOOL section_exist(LPCSTR S) const;
 	BOOL section_exist(const shared_str& S) const;
+	// pip direct inheritance parents of a section ([sect]:A, B), override map first then base, lets the
+	// game recover a scope's true config when X-Ray's first-parent-wins merge let a base override the value
+	const RStringVec* get_section_parents(const shared_str& S) const;
 	Root& sections() { return DATA; }
 	Root const& sections() const { return DATA; }
 

@@ -202,6 +202,7 @@ void CDetailManager::cache_Decompress(Slot* S)
 			Fvector3 terrain_normal;
 
 			float r_u, r_v, r_range;
+			bool no_push = false;
 			for (u32 tid = 0; tid < triCount; tid++)
 			{
 #ifdef _EDITOR
@@ -223,8 +224,20 @@ RDEVICE.Statistic->TEST0.End		();
 #else
 				CDB::TRI& T = tris[xrc.r_begin()[tid].id];
 				SGameMtl* mtl = GMLib.GetMaterialByIdx(T.material);
+				
 				if (mtl->Flags.test(SGameMtl::flPassable))
 					continue;
+
+				//Detect sector
+				if (RImplementation.pOutdoorSector)
+				{
+					CSector* sector = (CSector*)RImplementation.getSector(T.sector);
+					if (sector != RImplementation.pOutdoorSector)
+					{
+						no_push = true;
+						break;
+					}
+				}
 
 				Fvector Tv[3] = {verts[T.verts[0]], verts[T.verts[1]], verts[T.verts[2]]};
 				if (CDB::TestRayTri(Item_P, dir, Tv, r_u, r_v, r_range,TRUE))
@@ -233,8 +246,9 @@ RDEVICE.Statistic->TEST0.End		();
 					{
 						float y_test = Item_P.y - r_range;
 						if (y_test > y) y = y_test;
-						terrain_normal.mknormal(Tv[0], Tv[1], Tv[2]);
 					}
+					terrain_normal.mknormal(Tv[0], Tv[1], Tv[2]);
+					break;
 				}
 #endif
 			}
@@ -243,6 +257,7 @@ RDEVICE.Statistic->TEST0.End		();
 			float DotP = terrain_normal.dotproduct(dir);
 			if (DotP > -(1.0f - r_scale.randF(ps_ssfx_terrain_grass_slope * 0.8f, ps_ssfx_terrain_grass_slope))) continue;
 
+			if (no_push) continue;
 			if (y < D.vis.box.min.y) continue;
 			Item_P.y = y;
 			Item.normal = terrain_normal; // Save terrain normal here to feed the grass shader later.
