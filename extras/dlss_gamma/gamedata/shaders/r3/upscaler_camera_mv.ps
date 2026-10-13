@@ -1,0 +1,38 @@
+// Camera-only motion vectors from scene depth - temporal upscaler fallback
+// for shader packs that do not export MVs for every deferred material.
+#include "common.h"
+
+Texture2D<float> s_scene_depth;
+Texture2D<float4> s_motion_vectors;
+
+uniform float4x4 m_upscaler_reproject; // clip(current) -> clip(previous)
+uniform float4 upscaler_camera_mv_mode; // x: 1 fill missing, 2 force camera-only
+
+float4 main(p_screen I) : SV_Target
+{
+    float2 uv = I.tc0;
+    float depth = s_scene_depth.SampleLevel(smp_rtlinear, uv, 0);
+
+    // Texture space (Y down) -> clip space (Y up), D3D z in [0,1].
+    float4 clip;
+    clip.x = uv.x * 2.0 - 1.0;
+    clip.y = 1.0 - uv.y * 2.0;
+    clip.z = depth;
+    clip.w = 1.0;
+
+    float4 prevClip = mul(m_upscaler_reproject, clip);
+
+    float2 prevUV;
+    prevUV.x = prevClip.x / prevClip.w * 0.5 + 0.5;
+    prevUV.y = 0.5 - prevClip.y / prevClip.w * 0.5;
+
+    // curr - prev, texture-space, Y down - matches ssfx_mv_calc output.
+    float2 camMV = uv - prevUV;
+
+    float4 stored = s_motion_vectors.SampleLevel(smp_rtlinear, uv, 0);
+    bool hasStored = abs(stored.x) + abs(stored.y) > 1e-6;
+    if (upscaler_camera_mv_mode.x > 1.5 || !hasStored)
+        stored.xy = camMV;
+
+    return stored;
+}

@@ -68,6 +68,7 @@ private:
 	// Data and logic
 	xr_vector<Item> items;
 	States state;
+	xrCriticalSection rainCS;
 
 	// Particles
 	xr_vector<Particle> particle_pool;
@@ -115,6 +116,7 @@ public:
 
 	float GetRainVolume() { return rain_volume; }
 	float GetRainHemi() { return rain_hemi; }
+	void UpdateItems();
 };
 
 #endif //RainH

@@ -230,7 +230,7 @@ void CStepManager::update(bool b_hud_view)
 					LPCSTR ps_name = *mtl_pair->CollideParticles[::Random.randI(0, mtl_pair->CollideParticles.size())];
 
 					//отыграть партиклы столкновения материалов
-					CParticlesObject* ps = CParticlesObject::Create(ps_name,TRUE);
+					intrusive_ptr<CParticlesObject> ps = Particles::Details::Create(ps_name,TRUE);
 
 					// вычислить позицию и направленность партикла
 					Fmatrix pos;
@@ -273,6 +273,36 @@ void CStepManager::update(bool b_hud_view)
 			}
 		}
 	STOP_PROFILE
+}
+
+void CStepManager::play_forced_step(float power, bool b_hud_view)
+{
+	SGameMtlPair* mtl_pair = m_object->material().get_current_pair();
+	if (!mtl_pair || !is_on_ground())
+		return;
+
+	CGameObject* object = smart_cast<CGameObject*>(m_object);
+	if (!object)
+		return;
+
+	if (object->ID() == 0)
+	{
+		SGameMtl* material = GMLib.GetMaterialByID(mtl_pair->GetMtl1());
+		if (material)
+		{
+			::luabind::functor<bool> callback;
+			if (ai().script_engine().functor("_G.CActor__FootstepCallback", callback) &&
+				callback(*material->m_Name, power, b_hud_view))
+				m_step_sound.play_next(mtl_pair, m_object, power, b_hud_view);
+		}
+	}
+	else
+	{
+		m_step_sound.play_next(mtl_pair, m_object, power, b_hud_view);
+		object->FootStepCallback(power, true, true, b_hud_view);
+	}
+
+	event_on_step();
 }
 
 //////////////////////////////////////////////////////////////////////////

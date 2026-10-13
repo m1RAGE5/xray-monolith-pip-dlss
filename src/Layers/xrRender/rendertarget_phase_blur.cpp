@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "RenderDimensions.h"
 
 
 IC bool SortLights(light* i, light* j)
@@ -15,8 +16,8 @@ void CRenderTarget::phase_blur()
 	u32 C = color_rgba(0, 0, 0, 255);
 
 	//Full resolution
-	float w = float(Device.dwWidth);
-	float h = float(Device.dwHeight);
+	float w = float(RenderScreenWidth());
+	float h = float(RenderScreenHeight());
 
 	Fvector2 p0, p1;
 #if defined(USE_DX10) || defined(USE_DX11)
@@ -30,8 +31,8 @@ void CRenderTarget::phase_blur()
 	///////////////////////////////////////////////////////////////////////////////////
 	////Horizontal blur
 	///////////////////////////////////////////////////////////////////////////////////
-	w = float(Device.dwWidth) * 0.5f;
-	h = float(Device.dwHeight) * 0.5f;
+	w = float(RenderScreenWidth()) * 0.5f;
+	h = float(RenderScreenHeight()) * 0.5f;
 
 #if defined(USE_DX10) || defined(USE_DX11)
 	u_setrt(rt_blur_h_2, 0, 0, 0);
@@ -81,8 +82,8 @@ void CRenderTarget::phase_blur()
 	///////////////////////////////////////////////////////////////////////////////////
 	////Horizontal blur / Half res
 	///////////////////////////////////////////////////////////////////////////////////
-	w = float(Device.dwWidth) * 0.25f;
-	h = float(Device.dwHeight) * 0.25f;
+	w = float(RenderScreenWidth()) * 0.25f;
+	h = float(RenderScreenHeight()) * 0.25f;
 
 #if defined(USE_DX10) || defined(USE_DX11)
 	u_setrt(rt_blur_h_4, 0, 0, 0);
@@ -132,8 +133,8 @@ void CRenderTarget::phase_blur()
 	///////////////////////////////////////////////////////////////////////////////////
 	////Horizontal blur
 	///////////////////////////////////////////////////////////////////////////////////
-	w = float(Device.dwWidth) * 0.125f;
-	h = float(Device.dwHeight) * 0.125f;
+	w = float(RenderScreenWidth()) * 0.125f;
+	h = float(RenderScreenHeight()) * 0.125f;
 
 #if defined(USE_DX10) || defined(USE_DX11)
 	u_setrt(rt_blur_h_8, 0, 0, 0);
@@ -193,8 +194,8 @@ void CRenderTarget::phase_ssfx_ssr()
 
 	float d_Z = EPS_S;
 	float d_W = 1.0f;
-	float w = float(Device.dwWidth);
-	float h = float(Device.dwHeight);
+	float w = float(RenderScreenWidth());
+	float h = float(RenderScreenHeight());
 
 	float ScaleFactor = std::min(std::max(ps_ssfx_ssr.x, 1.0f), 2.0f);
 
@@ -255,7 +256,9 @@ void CRenderTarget::phase_ssfx_ssr()
 	RCache.Render(D3DPT_TRIANGLELIST, Offset, 0, 4, 0, 2);
 
 	// COPY SSR RESULT ( ACC ) ////////////////////////////////////////////
+	svp_copy_begin(SVP_CP_HIST, rt_copy_bytes(rt_ssfx_ssr));
 	HW.pContext->CopyResource(rt_ssfx_ssr->pTexture->surface_get(), rt_ssfx->pTexture->surface_get());
+	svp_copy_end(SVP_CP_HIST);
 
 	// Disable/Enable Blur if the value is <= 0
 	//if (ps_ssfx_ssr.y > 0 || ps_ssfx_ssr.x > 1.0)
@@ -334,6 +337,7 @@ void CRenderTarget::phase_ssfx_ssr()
 
 void CRenderTarget::phase_ssfx_volumetric_blur()
 {
+    PROF_EVENT("phase_ssfx_volumetric_blur");
 
 	// Be careful and clear the buffer ( rt_Generic_2 contain unspeakable stuff if no volumetric is written )
 	if (!m_bHasActiveVolumetric)
@@ -354,15 +358,15 @@ void CRenderTarget::phase_ssfx_volumetric_blur()
 	u32 C = color_rgba(0, 0, 0, 255);
 
 	FVF::TL* pv;
-	float w = float(Device.dwWidth);
-	float h = float(Device.dwHeight);
+	float w = float(RenderScreenWidth());
+	float h = float(RenderScreenHeight());
 
 	Fvector2 p0, p1;
 	p0.set(0.0f, 0.0f);
 	p1.set(1.0f, 1.0f);
 
-	// Volumetric always at 1/8 res
-	set_viewport_size(HW.pContext, w / 8, h / 8);
+	// Volumetric always at volsize res, default 1/8
+	set_viewport_size(HW.pContext, w / RImplementation.o.volsize, h / RImplementation.o.volsize);
 
 	ref_rt* rt_VolBlur[2] = { &rt_ssfx_volumetric_tmp, &rt_ssfx_volumetric };
 	int pixelsize[4] = { 0, 1, 1, 2 }; // half pixel + pixelsize
@@ -385,7 +389,7 @@ void CRenderTarget::phase_ssfx_volumetric_blur()
 
 		// Draw COLOR
 		RCache.set_Element(s_ssfx_volumetric_blur->E[b % 2]);
-		RCache.set_c("blur_setup", w / 8, h / 8, pixelsize[b], pixelscale[b]);
+		RCache.set_c("blur_setup", w / RImplementation.o.volsize, h / RImplementation.o.volsize, pixelsize[b], pixelscale[b]);
 		RCache.set_Geometry(g_combine);
 		RCache.Render(D3DPT_TRIANGLELIST, Offset, 0, 4, 0, 2);
 	}
@@ -422,8 +426,8 @@ void CRenderTarget::phase_ssfx_water_blur()
 
 	float d_Z = EPS_S;
 	float d_W = 1.0f;
-	float w = float(Device.dwWidth);
-	float h = float(Device.dwHeight);
+	float w = float(RenderScreenWidth());
+	float h = float(RenderScreenHeight());
 
 	Fvector2 p0, p1;
 	p0.set(0.0f, 0.0f);
@@ -508,8 +512,8 @@ void CRenderTarget::phase_ssfx_water_waves()
 
 	float d_Z = EPS_S;
 	float d_W = 1.0f;
-	u32 w = Device.dwWidth;
-	u32 h = Device.dwHeight;
+	u32 w = RenderScreenWidth();
+	u32 h = RenderScreenHeight();
 
 
 	Fvector2 p0, p1;
@@ -547,8 +551,8 @@ void CRenderTarget::phase_ssfx_sss()
 
 	float d_Z = EPS_S;
 	float d_W = 1.0f;
-	float w = float(Device.dwWidth);
-	float h = float(Device.dwHeight);
+	float w = float(RenderScreenWidth());
+	float h = float(RenderScreenHeight());
 
 	Fvector2 p0, p1;
 	p0.set(0.0f, 0.0f);
@@ -651,8 +655,8 @@ void CRenderTarget::phase_ssfx_sss_ext(light_Package& LP)
 
 	float d_Z = EPS_S;
 	float d_W = 1.0f;
-	float w = Device.dwWidth;
-	float h = Device.dwHeight;
+	float w = RenderScreenWidth();
+	float h = RenderScreenHeight();
 
 	Fvector2 p0, p1;
 	p0.set(0.0f, 0.0f);
@@ -692,7 +696,8 @@ void CRenderTarget::phase_ssfx_sss_ext(light_Package& LP)
 		for (int slot = 0; slot < 8; slot++)
 			Lights_Array[slot].set(0, 0, 0, 0);
 
-		xr_vector<light*> LightsSort;
+		static xr_vector<light*> LightsSort;
+        LightsSort.clear();
 		bool CheckPackage = true;
 
 		if (Device.dwFrame > sss_currentframe)
@@ -700,12 +705,22 @@ void CRenderTarget::phase_ssfx_sss_ext(light_Package& LP)
 			sss_currentframe = Device.dwFrame + 2;
 
 			xr_vector<light*>& source = LP.v_shadowed;
+
+            // demonized: use whatever omni light visible by checking its parent
+            // normally it should be omnipart_num 0, but with omnipart_vischeck its not guaranteed, hope its stable
+            static xr_unordered_flat_set<light*> omni_parents;
+            omni_parents.clear();
 			for (u32 it = 0; it < source.size(); it++)
 			{
 				light* L = source[it];
+                light* parent = L->omipart_parent;
 
-				if (L->omnipart_num == 0 && L->range > 1.5f)
+				if ((L->omnipart_num == 0 || (parent && omni_parents.find(parent) == omni_parents.end())) && L->range > 1.5f)
 				{
+                    light* to_insert = L->omnipart_num == 0 ? L : parent;
+                    if (to_insert)
+                        omni_parents.insert(to_insert);
+
 					if (L->distance < 800 && L->flags.bActive)
 					{
 						L->distance_lpos = Device.vCameraPosition.distance_to(L->position);
@@ -767,6 +782,7 @@ void CRenderTarget::phase_ssfx_sss_ext(light_Package& LP)
 					LightSlot[FreeSlot] = L;
 
 					L->sss_id = FreeSlot;
+                    L->sss_remove_latency = 0;
                     L->sss_on_light_destroy.bind(OnLightDestroy);
 
 					if (L->flags.type == IRender_Light::OMNIPART)
@@ -812,15 +828,22 @@ void CRenderTarget::phase_ssfx_sss_ext(light_Package& LP)
 				// Remove Light
 				if (!LightSlot[slot]->flags.bActive || Remove)
 				{
-					if (LightSlot[slot]->flags.type == IRender_Light::OMNIPART)
-						LightSlot[slot]->sss_refresh = true;
+                    // demonized: keep the light pointer for some frames to eliminate flicker, but also check if its actually been disabled
+                    LightSlot[slot]->sss_remove_latency++;
+                    if (!LightSlot[slot]->flags.bActive || LightSlot[slot]->sss_remove_latency > 5)
+                    {
+                        if (LightSlot[slot]->flags.type == IRender_Light::OMNIPART)
+                            LightSlot[slot]->sss_refresh = true;
 
-                    LightSlot[slot]->sss_id = -1;
-                    LightSlot[slot]->sss_on_light_destroy.clear();
-                    LightSlot[slot] = NULL;
+                        LightSlot[slot]->sss_id = -1;
+                        LightSlot[slot]->sss_on_light_destroy.clear();
+                        LightSlot[slot] = NULL;
+                    }
 				}
 				else
 				{
+                    LightSlot[slot]->sss_remove_latency = 0;                  
+
 					// Update Light
 					Fvector L_pos;
 
@@ -900,8 +923,8 @@ void CRenderTarget::phase_ssfx_fog_scattering()
 	Fvector2 p0, p1;
 
 	u32 C = color_rgba(255, 255, 255, 255);
-	float w = float(Device.dwWidth);
-	float h = float(Device.dwHeight);
+	float w = float(RenderScreenWidth());
+	float h = float(RenderScreenHeight());
 
 	p0.set(0.0f, 0.0f);
 	p1.set(1.0f, 1.0f);
@@ -959,7 +982,9 @@ void CRenderTarget::phase_ssfx_fog_scattering()
 
 	RCache.Render(D3DPT_TRIANGLELIST, Offset, 0, 4, 0, 2);
 
+	svp_copy_begin(SVP_CP_TAIL, rt_copy_bytes(rt_Generic_0));
 	HW.pContext->CopyResource(rt_Generic_0->pTexture->surface_get(), dest_rt->pTexture->surface_get());
+	svp_copy_end(SVP_CP_TAIL);
 
 }
 
@@ -969,8 +994,8 @@ void CRenderTarget::phase_ssfx_motion_blur()
 	Fvector2 p0, p1;
 
 	u32 C = color_rgba(255, 255, 255, 255);
-	float w = float(Device.dwWidth);
-	float h = float(Device.dwHeight);
+	float w = float(RenderScreenWidth());
+	float h = float(RenderScreenHeight());
 
 	p0.set(0.0f, 0.0f);
 	p1.set(1.0f, 1.0f);
@@ -998,7 +1023,9 @@ void CRenderTarget::phase_ssfx_motion_blur()
 	RCache.set_Geometry(g_combine);
 	RCache.Render(D3DPT_TRIANGLELIST, Offset, 0, 4, 0, 2);
 
+	svp_copy_begin(SVP_CP_TAIL, rt_copy_bytes(rt_Generic_0));
 	HW.pContext->CopyResource(rt_Generic_0->pTexture->surface_get(), dest_rt->pTexture->surface_get());
+	svp_copy_end(SVP_CP_TAIL);
 }
 
 #endif

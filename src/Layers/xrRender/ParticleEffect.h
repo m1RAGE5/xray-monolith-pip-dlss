@@ -41,6 +41,8 @@ namespace PS
 			flRT_DefferedStop = (1 << 1),
 			flRT_XFORM = (1 << 2),
 			flRT_HUDmode = (1 << 3),
+			flRT_LiveUpdate = (1 << 4),
+			flRT_WeaponFX = (1 << 5),
 		};
 
 		Flags8 m_RT_Flags;
@@ -76,6 +78,12 @@ namespace PS
 
 		virtual void SetHudMode(BOOL b) { m_RT_Flags.set(flRT_HUDmode, b); }
 		virtual BOOL GetHudMode() { return m_RT_Flags.is(flRT_HUDmode); }
+
+		virtual void SetWeaponFX(BOOL b) { m_RT_Flags.set(flRT_WeaponFX, b); }
+		virtual BOOL GetWeaponFX() { return m_RT_Flags.is(flRT_WeaponFX); }
+
+		virtual void SetLiveUpdate(BOOL b) { m_RT_Flags.set(flRT_LiveUpdate, b); }
+		virtual BOOL GetLiveUpdate() { return m_RT_Flags.is(flRT_LiveUpdate); }
 
 		virtual float GetTimeLimit()
 		{

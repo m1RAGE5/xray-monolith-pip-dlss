@@ -220,8 +220,8 @@ private:
 	CMatrix*						matrices	[8	];	// matrices are supported only for FFP
 #endif
 
-	void Invalidate();
 public:
+	void Invalidate(); // pip: SetActive needs a full cache reset per viewport (was private)
 	struct _stats
 	{
 		u32 polys;
@@ -248,24 +248,26 @@ public:
 public:
 	IC CTexture* get_ActiveTexture(u32 stage)
 	{
-		if (stage < CTexture::rstVertex) return textures_ps[stage];
-		else if (stage < CTexture::rstGeometry) return textures_vs[stage - CTexture::rstVertex];
+		CTexture* T = NULL;
+		if (stage < CTexture::rstVertex) T = textures_ps[stage];
+		else if (stage < CTexture::rstGeometry) T = textures_vs[stage - CTexture::rstVertex];
 #ifdef USE_DX10
-		else return textures_gs[stage - CTexture::rstGeometry];
+		else T = textures_gs[stage - CTexture::rstGeometry];
 #elif USE_DX11
-		else if (stage < CTexture::rstHull) return textures_gs[stage - CTexture::rstGeometry];
-		else if (stage < CTexture::rstDomain) return textures_hs[stage - CTexture::rstHull];
-		else if (stage < CTexture::rstCompute) return textures_ds[stage - CTexture::rstDomain];
-		else if (stage < CTexture::rstInvalid) return textures_cs[stage - CTexture::rstCompute];
+		else if (stage < CTexture::rstHull) T = textures_gs[stage - CTexture::rstGeometry];
+		else if (stage < CTexture::rstDomain) T = textures_hs[stage - CTexture::rstHull];
+		else if (stage < CTexture::rstCompute) T = textures_ds[stage - CTexture::rstDomain];
+		else if (stage < CTexture::rstInvalid) T = textures_cs[stage - CTexture::rstCompute];
 		else
 		{
 			VERIFY(!"Invalid texture stage");
-			return 0;
 		}
-#else	//	USE_DX10
-		VERIFY(!"Invalid texture stage");
-		return 0;
-#endif	//	USE_DX10
+#endif
+		while (T&&!T->flags.bLoaded)
+		{
+			SwitchToThread();
+		}
+		return T;
 	}
 
 #if defined(USE_DX10) || defined(USE_DX11)

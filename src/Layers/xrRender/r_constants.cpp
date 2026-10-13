@@ -31,14 +31,25 @@ void R_constant_table::fatal(LPCSTR S, LPCSTR name)
 	Debug.fatal(DEBUG_INFO, "%s (constant '%s')", S, name);
 }
 
+void R_constant_table::_copy(const R_constant_table& Other)
+{
+	table = Other.table;
+#if defined(USE_DX10) || defined(USE_DX11)
+	m_CBTable = Other.m_CBTable;
+#endif
+}
+
+
 // predicates
-IC bool p_sort(const ref_constant& C1, const ref_constant& C2) noexcept
+IC bool p_sort_constants(const ref_constant& C1, const ref_constant& C2) noexcept
 {
 	return C1->name < C2->name;
 }
 
 R_constant* R_constant_table::get(LPCSTR S)
 {
+	PROF_EVENT("R_constant_table::get LPCSTR");
+
     // demonized: make shared_str and use override, str most likely already exists, faster
     shared_str s(S);
     return get(s);
@@ -46,6 +57,7 @@ R_constant* R_constant_table::get(LPCSTR S)
 
 R_constant* R_constant_table::get(shared_str& S)
 {
+	PROF_EVENT("R_constant_table::get shared_str");
 	// demonized: use lower_bound for shared_str search, sorted by pointer
     static auto sortFunc = [](const ref_constant& C, const shared_str& S) noexcept { return C->name < S; };
     auto it = std::lower_bound(table.begin(), table.end(), S, sortFunc);
@@ -194,7 +206,7 @@ BOOL R_constant_table::parse(void* _desc, u32 destination)
 			L.size = it->RegisterCount * 16;
 		}
 	}
-	std::sort(table.begin(), table.end(), p_sort);
+	std::sort(table.begin(), table.end(), p_sort_constants);
 	return TRUE;
 }
 #endif	//	USE_DX10
@@ -257,7 +269,7 @@ void R_constant_table::merge(R_constant_table* T)
 		std::move(table_tmp.begin(), table_tmp.end(), std::back_inserter(table));
 
 		// Sort
-		std::sort(table.begin(), table.end(), p_sort);
+		std::sort(table.begin(), table.end(), p_sort_constants);
 	}
 
 #if defined(USE_DX10) || defined(USE_DX11)

@@ -355,8 +355,10 @@ void dxRenderDeviceRender::ResourcesPrefetchCreateTexture(LPCSTR name)
 	Resources->_CreateTexture(name);
 }
 
+xrCriticalSection resources_lock;
 void dxRenderDeviceRender::ResourcesGetMemoryUsage(u32& m_base, u32& c_base, u32& m_lmaps, u32& c_lmaps)
 {
+    xrCriticalSectionGuard g(resources_lock);
 	if (Resources)
 		Resources->_GetMemoryUsage(m_base, c_base, m_lmaps, c_lmaps);
 }
@@ -421,6 +423,7 @@ void dxRenderDeviceRender::Begin()
 #if !defined(USE_DX10) && !defined(USE_DX11)
 	CHK_DX(HW.pDevice->BeginScene());
 #endif	//	USE_DX10
+
 	RCache.OnFrameBegin();
 	RCache.set_CullMode(CULL_CW);
 	RCache.set_CullMode(CULL_CCW);
@@ -460,7 +463,10 @@ void dxRenderDeviceRender::End()
 	RCache.OnFrameEnd();
 	Memory.dbg_check();
 
-	DoAsyncScreenshot();
+	{
+		PROF_EVENT("Async Screenshot");
+		DoAsyncScreenshot();
+	}
 
 #if defined(USE_DX10) || defined(USE_DX11)
     UINT present_flags = 0;
@@ -475,13 +481,14 @@ void dxRenderDeviceRender::End()
 	}
 # endif
 
-	if (!Device.m_SecondViewport.IsSVPFrame() && !Device.m_SecondViewport.isCamReady) {
+	// true PiP presents every frame, legacy suppresses on the hidden SVP frame
+	if (Device.true_pip_on || (!Device.m_SecondViewport.IsSVPFrame() && !Device.m_SecondViewport.isCamReady)) {
 		HW.m_pSwapChain->Present(present_interval, present_flags);
 	}
 #else //!USE_DX10 || USE_DX11
 	CHK_DX(HW.pDevice->EndScene());
 
-	if (!Device.m_SecondViewport.IsSVPFrame() && !Device.m_SecondViewport.isCamReady)
+	if (Device.true_pip_on || (!Device.m_SecondViewport.IsSVPFrame() && !Device.m_SecondViewport.isCamReady))
 		HW.pDevice->Present(NULL, NULL, NULL, NULL);
 #endif //-USE_DX10
 	//HRESULT _hr		= HW.pDevice->Present( NULL, NULL, NULL, NULL );

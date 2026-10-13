@@ -4,7 +4,6 @@
 #include "hit.h"
 #include "PHDestroyable.h"
 #include "actor.h"
-#include "ParticlesObject.h"
 #include "xrserver_objects_alife_monsters.h"
 #include "../xrEngine/LightAnimLibrary.h"
 #include "level.h"
@@ -93,8 +92,7 @@ void CCustomZone::Load(LPCSTR section)
 	m_StateTime[eZoneStateAccumulate] = pSettings->r_s32(section, "accamulate_time");
 
 	//////////////////////////////////////////////////////////////////////////
-	ISpatial* self = smart_cast<ISpatial*>(this);
-	if (self) self->spatial.type |= (STYPE_COLLIDEABLE | STYPE_SHAPE);
+	SpatialComponent->spatial.type |= (STYPE_COLLIDEABLE | STYPE_SHAPE);
 	//////////////////////////////////////////////////////////////////////////
 
 	LPCSTR sound_str = NULL;
@@ -420,7 +418,8 @@ BOOL CCustomZone::net_Spawn(CSE_Abstract* DC)
 
 	setEnabled(TRUE);
 
-	PlayIdleParticles();
+	if (IsEnabled())
+		PlayIdleParticles();
 
 	m_iPreviousStateTime = m_iStateTime = 0;
 
@@ -446,7 +445,7 @@ void CCustomZone::net_Destroy()
 	m_pLight.destroy();
 	m_pIdleLight.destroy();
 
-	CParticlesObject::Destroy(m_pIdleParticles);
+	Particles::Details::Destroy(m_pIdleParticles);
 
 	if (m_actor_effector)
 		m_actor_effector->Stop();
@@ -588,6 +587,7 @@ void CCustomZone::UpdateCL()
 // called as usual
 void CCustomZone::shedule_Update(u32 dt)
 {
+	PROF_EVENT("CCustomZone::shedule_Update");
 	m_zone_flags.set(eZoneIsActive, FALSE);
 
 	if (IsEnabled())
@@ -744,7 +744,7 @@ void CCustomZone::feel_touch_delete(CObject* O)
 	if (it != m_ObjectInfoMap.end())
 	{
 		exit_Zone(*it);
-		m_ObjectInfoMap.erase(it);
+		m_ObjectInfoMap.erase_fast(it);
 	}
 }
 
@@ -803,9 +803,7 @@ void CCustomZone::PlayIdleParticles(bool bIdleLight)
 	{
 		if (!m_pIdleParticles)
 		{
-			m_pIdleParticles = CParticlesObject::Create(m_sIdleParticles.c_str(),FALSE);
-			m_pIdleParticles->UpdateParent(XFORM(), zero_vel);
-
+			m_pIdleParticles = Particles::Details::Create(m_sIdleParticles.c_str(),FALSE);
 			m_pIdleParticles->UpdateParent(XFORM(), zero_vel);
 			m_pIdleParticles->Play(false);
 		}
@@ -821,7 +819,7 @@ void CCustomZone::StopIdleParticles(bool bIdleLight)
 	if (m_pIdleParticles)
 	{
 		m_pIdleParticles->Stop(FALSE);
-		CParticlesObject::Destroy(m_pIdleParticles);
+		Particles::Details::Destroy(m_pIdleParticles);
 	}
 
 	if (bIdleLight)
@@ -877,8 +875,7 @@ void CCustomZone::PlayBlowoutParticles()
 	if (!m_sBlowoutParticles) return;
 	if (!m_zone_flags.test(eFastMode)) return;
 
-	CParticlesObject* pParticles;
-	pParticles = CParticlesObject::Create(*m_sBlowoutParticles,TRUE);
+	intrusive_ptr<CParticlesObject> pParticles = Particles::Details::Create(*m_sBlowoutParticles,TRUE);
 	pParticles->UpdateParent(XFORM(), zero_vel);
 	pParticles->Play(false);
 
@@ -954,7 +951,7 @@ void CCustomZone::PlayEntranceParticles(CGameObject* pObject)
 
 		if (play_bone != BI_NONE)
 		{
-			CParticlesObject* pParticles = CParticlesObject::Create(particle_str, TRUE);
+			intrusive_ptr<CParticlesObject> pParticles = Particles::Details::Create(particle_str, TRUE);
 			Fmatrix xform;
 			Fvector dir;
 			if (fis_zero(vel.magnitude()))
@@ -983,8 +980,7 @@ void CCustomZone::PlayBoltEntranceParticles()
 	xr_vector<CCF_Shape::shape_def>& Shapes = Sh->Shapes();
 	Fvector sP0, sP1, vel;
 
-	CParticlesObject* pParticles = NULL;
-
+	intrusive_ptr<CParticlesObject> pParticles;
 	xr_vector<CCF_Shape::shape_def>::iterator it = Shapes.begin();
 	xr_vector<CCF_Shape::shape_def>::iterator it_e = Shapes.end();
 
@@ -1021,7 +1017,7 @@ void CCustomZone::PlayBoltEntranceParticles()
 
 					PXF.c = sP1;
 
-					pParticles = CParticlesObject::Create(m_sBoltEntranceParticles.c_str(), TRUE);
+					pParticles = Particles::Details::Create(m_sBoltEntranceParticles.c_str(), TRUE);
 					pParticles->UpdateParent(PXF, vel);
 					pParticles->Play(false);
 				}
@@ -1040,8 +1036,7 @@ void CCustomZone::PlayBulletParticles(Fvector& pos)
 
 	if (!m_sEntranceParticlesSmall) return;
 
-	CParticlesObject* pParticles;
-	pParticles = CParticlesObject::Create(*m_sEntranceParticlesSmall,TRUE);
+	intrusive_ptr<CParticlesObject> pParticles = Particles::Details::Create(*m_sEntranceParticlesSmall,TRUE);
 
 	Fmatrix M;
 	M = XFORM();
@@ -1457,7 +1452,7 @@ void CCustomZone::net_Relcase(CObject* O)
 	if (it != m_ObjectInfoMap.end())
 	{
 		exit_Zone(*it);
-		m_ObjectInfoMap.erase(it);
+		m_ObjectInfoMap.erase_fast(it);
 	}
 	if (GO->ID() == m_owner_id) m_owner_id = u32(-1);
 
@@ -1492,8 +1487,7 @@ void CCustomZone::PlayAccumParticles()
 	if (!m_zone_flags.test(eFastMode)) return;
 	if (m_sAccumParticles.size())
 	{
-		CParticlesObject* pParticles;
-		pParticles = CParticlesObject::Create(*m_sAccumParticles,TRUE);
+		intrusive_ptr<CParticlesObject> pParticles = Particles::Details::Create(*m_sAccumParticles,TRUE);
 		pParticles->UpdateParent(XFORM(), zero_vel);
 		pParticles->Play(false);
 	}
@@ -1507,8 +1501,7 @@ void CCustomZone::PlayAwakingParticles()
 	if (!m_zone_flags.test(eFastMode)) return;
 	if (m_sAwakingParticles.size())
 	{
-		CParticlesObject* pParticles;
-		pParticles = CParticlesObject::Create(*m_sAwakingParticles,TRUE);
+		intrusive_ptr<CParticlesObject> pParticles = Particles::Details::Create(*m_sAwakingParticles,TRUE);
 		pParticles->UpdateParent(XFORM(), zero_vel);
 		pParticles->Play(false);
 	}
@@ -1576,7 +1569,7 @@ void CCustomZone::GoEnabledState()
 
 bool CCustomZone::feel_touch_on_contact(CObject* O)
 {
-	if ((spatial.type | STYPE_VISIBLEFORAI) != spatial.type)
+	if ((SpatialComponent->spatial.type | STYPE_VISIBLEFORAI) != SpatialComponent->spatial.type)
 		return (false);
 
 	return (inherited::feel_touch_on_contact(O));

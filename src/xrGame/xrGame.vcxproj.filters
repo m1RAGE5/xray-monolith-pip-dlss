@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="AI">
@@ -5167,6 +5167,7 @@
       <Filter>AI\AScript\ScriptClasses\Console</Filter>
     </ClInclude>
     <ClInclude Include="shader_bus_script.h">
+    <ClInclude Include="svp_optic_config_script.h">
       <Filter>AI\AScript\ScriptClasses\Console</Filter>
     </ClInclude>
     <ClInclude Include="base_client_classes.h">
@@ -5176,18 +5177,6 @@
       <Filter>AI\AScript\ScriptClasses\BaseClientClasses</Filter>
     </ClInclude>
     <ClInclude Include="script_callback_ex.h">
-      <Filter>AI\AScript\ScriptClasses\ScriptCallbackEx</Filter>
-    </ClInclude>
-    <ClInclude Include="script_callback_ex_generators.h">
-      <Filter>AI\AScript\ScriptClasses\ScriptCallbackEx</Filter>
-    </ClInclude>
-    <ClInclude Include="script_callback_ex_inline.h">
-      <Filter>AI\AScript\ScriptClasses\ScriptCallbackEx</Filter>
-    </ClInclude>
-    <ClInclude Include="script_callback_ex_nonvoid.h">
-      <Filter>AI\AScript\ScriptClasses\ScriptCallbackEx</Filter>
-    </ClInclude>
-    <ClInclude Include="script_callback_ex_void.h">
       <Filter>AI\AScript\ScriptClasses\ScriptCallbackEx</Filter>
     </ClInclude>
     <ClInclude Include="script_lanim.h">
@@ -5428,6 +5417,33 @@
       <Filter>Core\Client\Objects\actor\mp\state</Filter>
     </ClInclude>
     <ClInclude Include="Actor.h">
+      <Filter>Core\Client\Objects\actor\base</Filter>
+    </ClInclude>
+    <ClInclude Include="bodycam_camera.h">
+      <Filter>Core\Client\Objects\actor\base</Filter>
+    </ClInclude>
+    <ClInclude Include="bodycam_hud_arms.h">
+      <Filter>Core\Client\Objects\actor\base</Filter>
+    </ClInclude>
+    <ClInclude Include="bodycam_math.h">
+      <Filter>Core\Client\Objects\actor\base</Filter>
+    </ClInclude>
+    <ClInclude Include="bodycam_mouse_input.h">
+      <Filter>Core\Client\Objects\actor\base</Filter>
+    </ClInclude>
+    <ClInclude Include="bodycam_movement_response.h">
+      <Filter>Core\Client\Objects\actor\base</Filter>
+    </ClInclude>
+    <ClInclude Include="bodycam_pip_adapter.h">
+      <Filter>Core\Client\Objects\actor\base</Filter>
+    </ClInclude>
+    <ClInclude Include="bodycam_settings.h">
+      <Filter>Core\Client\Objects\actor\base</Filter>
+    </ClInclude>
+    <ClInclude Include="bodycam_simulation.h">
+      <Filter>Core\Client\Objects\actor\base</Filter>
+    </ClInclude>
+    <ClInclude Include="bodycam_viewmodel_profile.h">
       <Filter>Core\Client\Objects\actor\base</Filter>
     </ClInclude>
     <ClInclude Include="actor_anim_defs.h">
@@ -5746,6 +5762,9 @@
       <Filter>Core\Client\Objects\items &amp; weapons\Weapons\Custom Weapon\Weapon Generic</Filter>
     </ClInclude>
     <ClInclude Include="Weapon.h">
+      <Filter>Core\Client\Objects\items &amp; weapons\Weapons\Custom Weapon\Weapon Generic</Filter>
+    </ClInclude>
+    <ClInclude Include="svp_mags.h">
       <Filter>Core\Client\Objects\items &amp; weapons\Weapons\Custom Weapon\Weapon Generic</Filter>
     </ClInclude>
     <ClInclude Include="WeaponAmmo.h">
@@ -8796,6 +8815,7 @@
       <Filter>AI\AScript\ScriptClasses\Console</Filter>
     </ClCompile>
     <ClCompile Include="shader_bus_script.cpp">
+    <ClCompile Include="svp_optic_config_script.cpp">
       <Filter>AI\AScript\ScriptClasses\Console</Filter>
     </ClCompile>
     <ClCompile Include="base_client_classes_script.cpp">
@@ -9095,6 +9115,42 @@
     <ClCompile Include="ActorCameras.cpp">
       <Filter>Core\Client\Objects\actor\base</Filter>
     </ClCompile>
+    <ClCompile Include="bodycam_camera.cpp">
+      <Filter>Core\Client\Objects\actor\base</Filter>
+    </ClCompile>
+    <ClCompile Include="bodycam_hud_arms.cpp">
+      <Filter>Core\Client\Objects\actor\base</Filter>
+    </ClCompile>
+    <ClCompile Include="bodycam_console.cpp">
+      <Filter>Core\Client\Objects\actor\base</Filter>
+    </ClCompile>
+    <ClCompile Include="bodycam_math.cpp">
+      <Filter>Core\Client\Objects\actor\base</Filter>
+    </ClCompile>
+    <ClCompile Include="bodycam_mouse_input.cpp">
+      <Filter>Core\Client\Objects\actor\base</Filter>
+    </ClCompile>
+    <ClCompile Include="bodycam_movement_response.cpp">
+      <Filter>Core\Client\Objects\actor\base</Filter>
+    </ClCompile>
+    <ClCompile Include="bodycam_pip_adapter.cpp">
+      <Filter>Core\Client\Objects\actor\base</Filter>
+    </ClCompile>
+    <ClCompile Include="bodycam_pip_xray.cpp">
+      <Filter>Core\Client\Objects\actor\base</Filter>
+    </ClCompile>
+    <ClCompile Include="bodycam_settings.cpp">
+      <Filter>Core\Client\Objects\actor\base</Filter>
+    </ClCompile>
+    <ClCompile Include="bodycam_simulation.cpp">
+      <Filter>Core\Client\Objects\actor\base</Filter>
+    </ClCompile>
+    <ClCompile Include="bodycam_viewmodel_profile.cpp">
+      <Filter>Core\Client\Objects\actor\base</Filter>
+    </ClCompile>
+    <ClCompile Include="bodycam_script.cpp">
+      <Filter>Core\Client\Objects\actor\base</Filter>
+    </ClCompile>
     <ClCompile Include="ActorCondition.cpp">
       <Filter>Core\Client\Objects\actor\base</Filter>
     </ClCompile>
@@ -9312,6 +9368,12 @@
       <Filter>Core\Client\Objects\items &amp; weapons\Weapons\Custom Weapon\Weapon Generic</Filter>
     </ClCompile>
     <ClCompile Include="Weapon.cpp">
+      <Filter>Core\Client\Objects\items &amp; weapons\Weapons\Custom Weapon\Weapon Generic</Filter>
+    </ClCompile>
+    <ClCompile Include="svp_weapon.cpp">
+      <Filter>Core\Client\Objects\items &amp; weapons\Weapons\Custom Weapon\Weapon Generic</Filter>
+    </ClCompile>
+    <ClCompile Include="svp_mags.cpp">
       <Filter>Core\Client\Objects\items &amp; weapons\Weapons\Custom Weapon\Weapon Generic</Filter>
     </ClCompile>
     <ClCompile Include="WeaponDispersion.cpp">
@@ -9631,12 +9693,6 @@
     </ClCompile>
     <ClCompile Include="searchlight.cpp">
       <Filter>Core\Client\Objects\searchlight</Filter>
-    </ClCompile>
-    <ClCompile Include="searchlight_script.cpp">
-      <Filter>Core\Client\Objects\searchlight_script</Filter>
-    </ClCompile>
-    <ClCompile Include="searchlight_struct.cpp">
-      <Filter>Core\Client\Objects\searchlight_struct</Filter>
     </ClCompile>
     <ClCompile Include="trade.cpp">
       <Filter>Core\Client\Objects\searchlight\Trade</Filter>
@@ -11141,6 +11197,11 @@
     <ClCompile Include="script_imgui_script.cpp">
       <Filter>UI\Common\ImGui</Filter>
     </ClCompile>
+    <ClCompile Include="map_manager_script.cpp">
+      <Filter>Core\Client\Objects\tasks_info_dialogs\map</Filter>
+    </ClCompile>
+    <ClCompile Include="searchlight_script.cpp" />
+    <ClCompile Include="searchlight_struct.cpp" />
     <ClCompile Include="player_hud_legs.cpp">
       <Filter>Core\Client\Objects\items &amp; weapons\HudItem</Filter>
     </ClCompile>

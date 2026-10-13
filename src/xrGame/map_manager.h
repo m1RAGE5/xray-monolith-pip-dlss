@@ -1,6 +1,7 @@
 #pragma once
 #include "object_interfaces.h"
 #include "map_location_defs.h"
+#include "script_export_space.h"
 
 class CMapLocationWrapper;
 class CInventoryOwner;
@@ -31,6 +32,7 @@ public:
 	Locations& Locations(); //{return *m_locations;}
 	CMapLocation* AddMapLocation(const shared_str& spot_type, u16 id);
 	CMapLocation* AddRelationLocation(CInventoryOwner* pInvOwner);
+	void RemoveRelationLocation(CInventoryOwner* pInvOwner);
 	void RemoveMapLocation(const shared_str& spot_type, u16 id);
 
 	// demonized: remove all map object spots by id
@@ -51,4 +53,6 @@ public:
 	void					Dump						();
 #endif
 	void Destroy(CMapLocation*);
+
+	DECLARE_SCRIPT_REGISTER_FUNCTION
 };

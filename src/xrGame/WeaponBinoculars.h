@@ -28,6 +28,10 @@ public:
 	virtual void OnZoomOut();
 	virtual void ZoomInc();
 	virtual void ZoomDec();
+	// pip binocs are flat-window optics with their own zoom chain, keep the legacy fov derivation
+	virtual bool SvpDetentBase() const override { return false; }
+	// pip binocs keep the legacy zoom derivation, authored mags never apply
+	virtual bool SvpMagsEligible() const override { return false; }
 	virtual void net_Destroy();
 	virtual BOOL net_Spawn(CSE_Abstract* DC);
 	bool can_kill() const;
@@ -39,6 +43,7 @@ public:
 	virtual void render_item_ui();
 	virtual bool render_item_ui_query();
 	virtual bool use_crosshair() const { return false; }
+	virtual CWeaponBinoculars* cast_weapon_binoculars() { return this; }
 	virtual bool GetBriefInfo(II_BriefInfo& info);
 	virtual void net_Relcase(CObject* object);
 protected:

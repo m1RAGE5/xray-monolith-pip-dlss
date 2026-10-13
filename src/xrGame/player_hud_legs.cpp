@@ -256,6 +256,5 @@ void player_legs_controller::render(bool isShadowPass)
     if (!visual)
         return;
 
-    ::Render->set_Transform(&m_legs_transform);
-    ::Render->add_Visual(visual);
+    DM->add_Dynamic(visual, &m_legs_transform);
 }

@@ -149,6 +149,7 @@ CInifile::CInifile(IReader* F, LPCSTR path
 #endif
 )
 {
+	PROF_EVENT("CInifile::CInifile IReader");
 	m_file_name[0] = 0;
 	m_flags.zero();
 	m_flags.set(eSaveAtEnd, FALSE);
@@ -172,6 +173,7 @@ CInifile::CInifile(LPCSTR szFileName,
 )
 
 {
+	PROF_EVENT("CInifile::CInifile FileName");
 	if (szFileName && strstr(szFileName, "system"))
 		Msg("-----loading %s", szFileName);
 
@@ -1458,7 +1460,7 @@ void CInifile::DLTX_print(LPCSTR sec, LPCSTR line)
 	}
 	
 }
-LPCSTR CInifile::DLTX_getFilenameOfLine(LPCSTR sec, LPCSTR line)
+LPCSTR CInifile::DLTX_getFilenameOfLine(LPCSTR sec, LPCSTR line) const
 {
 	if (!sec) {
 		Msg("![DLTX_getFilenameOfLine] no section provided");
@@ -1507,9 +1509,7 @@ void CInifile::save_as(IWriter& writer, bool bcheck) const
 		writer.w_string(temp);
 		if (bcheck)
 		{
-			xr_sprintf(temp, sizeof(temp), "; %d %d %d", (*r_it).Name._get()->dwCRC,
-			           (*r_it).Name._get()->dwReference,
-			           (*r_it).Name._get()->dwLength);
+			xr_sprintf(temp, sizeof(temp), "; %d %d", (*r_it).Name._get()->intrusive_ref_count(), xr_strlen((*r_it).Name._get()->value));
 			writer.w_string(temp);
 		}
 
@@ -1595,6 +1595,19 @@ CInifile::Sect& CInifile::r_section(const shared_str& S) const { return r_sectio
 BOOL CInifile::line_exist(const shared_str& S, const shared_str& L) const { return line_exist(*S, *L); }
 u32 CInifile::line_count(const shared_str& S) const { return line_count(*S); }
 BOOL CInifile::section_exist(const shared_str& S) const { return section_exist(*S); }
+
+// pip read-only view of a section's direct inheritance parents (override declarations take priority over
+// base), or nullptr if the section has none / does not exist
+const RStringVec* CInifile::get_section_parents(const shared_str& S) const
+{
+	auto ito = OverrideParentDataMap.find(S);
+	if (ito != OverrideParentDataMap.end())
+		return &ito->second;
+	auto itb = BaseParentDataMap.find(S);
+	if (itb != BaseParentDataMap.end())
+		return &itb->second;
+	return nullptr;
+}
 
 //--------------------------------------------------------------------------------------
 // Read functions

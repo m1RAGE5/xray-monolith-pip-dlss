@@ -51,7 +51,11 @@ public:
 	// Erases the paths on level_id (CPatrolPath::on_level); returns their count.
 	u32 erase_level(const CGameGraph& graph, GameGraph::_LEVEL_ID level_id);
 	IC const CPatrolPath* path(shared_str patrol_name, bool no_assert = false) const;
+	const CPatrolPath* safe_path(shared_str patrol_name, bool no_assert = false, bool on_level = false) const;
 	IC const PATROL_REGISTRY& patrol_paths() const;
+
+	void add_path(shared_str, CPatrolPath*);
+	void remove_path(shared_str);
 };
 
 #include "patrol_path_storage_inline.h"

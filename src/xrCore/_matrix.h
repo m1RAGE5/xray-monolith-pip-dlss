@@ -61,6 +61,60 @@ public:
 		T m[4][4]; // Array
 	};
 
+	IC bool has_inited() {
+		if (
+			_11 == 0 &&
+			_12 == 0 &&
+			_13 == 0 &&
+			_14 == 0 &&
+
+			_21 == 0 &&
+			_22 == 0 &&
+			_23 == 0 &&
+			_24 == 0 &&
+
+			_31 == 0 &&
+			_32 == 0 &&
+			_33 == 0 &&
+			_34 == 0 &&
+
+			_41 == 0 &&
+			_42 == 0 &&
+			_43 == 0 &&
+			_44 == 0
+			)
+			return true;
+
+		return false;
+	}
+
+	IC bool has_identity() {
+		if (
+			_11 == 1 &&
+			_12 == 0 &&
+			_13 == 0 &&
+			_14 == 0 &&
+
+			_21 == 0 &&
+			_22 == 1 &&
+			_23 == 0 &&
+			_24 == 0 &&
+
+			_31 == 0 &&
+			_32 == 0 &&
+			_33 == 1 &&
+			_34 == 0 &&
+
+			_41 == 0 &&
+			_42 == 0 &&
+			_43 == 0 &&
+			_44 == 1
+			)
+			return true;
+
+		return false;
+	}
+
 	// Class members
 	ICF SelfRef set(const Self& a)
 	{
@@ -662,6 +716,18 @@ public:
 		_43 = -Q * fNearPlane;
 		_44 = 0;
 		return *this;
+	}
+
+	// inverse of build_projection
+	IC void decompose_projection(T& fFov, T& fAspect, T& fNearPlane, T& fFarPlane)
+	{
+		T Q = _33;
+		T w = _11;
+		T h = _22;
+		fNearPlane = _43 / -Q;
+		fFarPlane = (fNearPlane * Q) / (Q - 1.0f);
+		fAspect = w / h;
+		fFov = 2.0 * atanf(1.0f / h);
 	}
 
 	IC SelfRef build_projection_ortho(T w, T h, T zn, T zf)

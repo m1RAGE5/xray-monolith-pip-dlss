@@ -118,7 +118,7 @@ public:
 #ifdef OPTIMIZE_CALCULATE_BONES
 	IC bool canBeOptimized()
 	{
-		return spatialParent && spatialParent->canOptimizeCalculateBones();
+		return spatialParent && spatialParent->canOptimizeCalculateBones;
 	}
 #endif
 
@@ -126,13 +126,14 @@ protected:
 	SkeletonWMVec wallmarks;
 	u32 wm_frame;
 	u32 CurrentFrame;
-	Fmatrix	Matrix_Prev;
-	Fmatrix Matrix_Temp;
+	Fmatrix	Matrix_Prev[2]; // per viewport (main, SVP)
+	Fmatrix Matrix_Temp[2];
 
 	// Globals
 	CInifile* pUserData;
 	CBoneInstance* bone_instances; // bone instances
 	vecBones* bones; // all bones	(shared)
+	u16 bones_size;
 	u16 iRoot; // Root bone index
 
 	// Fast search
@@ -142,10 +143,8 @@ protected:
 	BOOL Update_Visibility;
 	u32 UCalc_Time;
 	s32 UCalc_Visibox;
+	u32 Visibox_frame = 0;
 	bool UCalc_ThisFrame;
-
-	xrCriticalSection UCalc_Mutex;
-	xrCriticalSection UCalc_Mutex2;
 
 	Flags64 visimask;
 	Flags64 hidden_bones;
@@ -179,6 +178,7 @@ public:
 	bool PickBone(const Fmatrix& parent_xform, IKinematics::pick_result& r, float dist, const Fvector& start,
 	              const Fvector& dir, u16 bone_id);
 	virtual void EnumBoneVertices(SEnumVerticesCallback& C, u16 bone_id);
+	virtual bool GetLensDetection(SLensDetection& out);
 public:
 	CKinematics();
 	virtual ~CKinematics();
@@ -241,7 +241,68 @@ public:
 	}
 
 	ICF Fmatrix& _BCL LL_GetTransform(u16 bone_id) { return LL_GetBoneVisible(bone_id) ? LL_GetBoneInstance(bone_id).mTransform : LL_GetBoneInstance(bone_id).mTransformHidden; }
+	ICF Fmatrix& _BCL LL_GetTransform_safed(u16 bone_id) { xrCriticalSectionGuard guard(&UCalc_Mutex); return LL_GetBoneVisible(bone_id) ? LL_GetBoneInstance(bone_id).mTransform : LL_GetBoneInstance(bone_id).mTransformHidden; }
 	ICF const Fmatrix& _BCL LL_GetTransform(u16 bone_id) const { return LL_GetBoneVisible(bone_id) ? LL_GetBoneInstance(bone_id).mTransform : LL_GetBoneInstance(bone_id).mTransformHidden; }
+	ICF void _BCL LL_GetBoneLocalPosition(u16 bone_id, Fvector& result)
+	{
+		xrCriticalSectionGuard guard(&UCalc_Mutex);
+		result = LL_GetBoneInstance(bone_id).mTransform.c;
+	}
+	ICF void _BCL LL_GetBoneLocalTransform(u16 bone_id, Fmatrix& result)
+	{
+		xrCriticalSectionGuard guard(&UCalc_Mutex);
+		result = LL_GetBoneInstance(bone_id).mTransform;
+	}
+	ICF void _BCL LL_GetBoneWorldPosition(u16 bone_id, const Fmatrix& xform, Fvector& result)
+	{
+		LL_GetBoneLocalPosition(bone_id, result);
+		xform.transform_tiny(result);
+	}
+	ICF void _BCL LL_GetBoneWorldTransform(u16 bone_id, const Fmatrix& xform, Fmatrix& result)
+	{
+		LL_GetBoneLocalTransform(bone_id, result);
+		result.mulA_43(xform);
+	}
+	ICF void _BCL CalculateBBox(BOOL bforce = TRUE)
+	{
+		if (!bforce && Device.dwFrame == Visibox_frame)
+			return;
+
+		Visibox_frame = Device.dwFrame;
+
+		Fbox Box;
+		Box.invalidate();
+		for (u32 b = 0; b < bones->size(); b++)
+		{
+			if (!LL_GetBoneVisible(u16(b)))
+				continue;
+
+			Fobb& obb = (*bones)[b]->obb;
+			Fmatrix& Mbone = LL_GetBoneInstance((u16)b).mTransform;
+			Fmatrix Mbox;
+			obb.xform_get(Mbox);
+			Fmatrix X;
+			X.mul_43(Mbone, Mbox);
+			Fvector& S = obb.m_halfsize;
+
+			Fvector P, A;
+			A.set(-S.x, -S.y, -S.z); X.transform_tiny(P, A); Box.modify(P);
+			A.set(-S.x, -S.y, S.z); X.transform_tiny(P, A); Box.modify(P);
+			A.set(S.x, -S.y, S.z); X.transform_tiny(P, A); Box.modify(P);
+			A.set(S.x, -S.y, -S.z); X.transform_tiny(P, A); Box.modify(P);
+			A.set(-S.x, S.y, -S.z); X.transform_tiny(P, A); Box.modify(P);
+			A.set(-S.x, S.y, S.z); X.transform_tiny(P, A); Box.modify(P);
+			A.set(S.x, S.y, S.z); X.transform_tiny(P, A); Box.modify(P);
+			A.set(S.x, S.y, -S.z); X.transform_tiny(P, A); Box.modify(P);
+		}
+
+		if (bones->size())
+		{
+			vis.box.min = (Box.min);
+			vis.box.max = (Box.max);
+			vis.box.getsphere(vis.sphere.P, vis.sphere.R);
+		}
+	}
 	ICF Fmatrix& LL_GetTransform_R(u16 bone_id) { return LL_GetBoneInstance(bone_id).mRenderTransform; }
 	// rendering only
 	Fobb& LL_GetBox(u16 bone_id)
@@ -303,7 +364,7 @@ public:
 	void							DebugRender			(Fmatrix& XFORM);
 #endif
 protected:
-	virtual shared_str		_BCL	getDebugName()	{ return dbg_name; }
+	virtual shared_str getDebugName() { return dbg_name; }
 public:
 
 	// General "Visual" stuff

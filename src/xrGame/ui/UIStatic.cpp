@@ -101,6 +101,7 @@ float CUIStatic::SetLineTo(float x1, float y1, float x2, float y2, float thickne
 
 void CUIStatic::Draw()
 {
+	PROF_EVENT("CUIStatic::Draw");
 	DrawTexture();
 	inherited::Draw();
 	DrawText();
@@ -369,7 +370,7 @@ void CUITextWnd::Draw()
 
 void CUITextWnd::Update()
 {
-	R_ASSERT(GetChildWndList().size()==0);
+	R_ASSERT(GetChildNum() == 0);
 	UpdateColorAnimation();
 	inherited::Update();
 }
