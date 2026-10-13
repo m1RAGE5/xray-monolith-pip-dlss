@@ -6,7 +6,7 @@ name: Build & Release
 # so they can never drift from the engine version again.
 on:
   push:
-    branches: [ "main", "dev" ]
+    branches: [ "update-*" ]
     tags: [ "*-pip-dlss" ]
   workflow_dispatch:
     inputs:
@@ -204,6 +204,7 @@ jobs:
         files: |
           *.zip
           pdb/*.zip
+          extras/kmack-fixes/bodycam-gamedata-kmack-fixes.zip
         overwrite_files: true
         tag_name: "${{steps.ver.outputs.tag}}"
         name: "${{steps.ver.outputs.version}} DLSS/FSR3 MT + Immersive Bodycam"
@@ -224,6 +225,10 @@ jobs:
           3. Turn MSAA Off, select FSR 3 / DLSS in Video settings, Apply.
 
           If the world appears to slide against the camera at upscaled resolutions (a shader pack that does not export motion vectors for every material), set `r__upscaler_camera_mv 1` (default) - the engine then rebuilds the missing camera vectors from depth. `2` forces camera-only vectors, `0` disables the fallback.
+
+          ## bodycam-gamedata-kmack-fixes
+          **What it is:** the Bodycam engine's gamedata contract (scope shaders, `pip_*.ltx` configs, scripts) that the new exe requires, plus a fix for the GAMMA **[Kmack] Maxim PDX and Optics** package: working PDX Terminal thermal imaging through PiP, scope reticle and 3x magnifier. Only needed for the **GAMMA + 3DSS + Kmack PDX** combo; not required for vanilla Anomaly.
+          **Install:** unzip into a separate mod folder under `GAMMA\mods`, enable it in MO2 **above** the `BODYCAM - PiP & 3DSS COMPATIBILITY PATCH` mod, and restart the game.
         token: "${{ secrets.GITHUB_TOKEN }}"
 
     - name: Remove artifacts
