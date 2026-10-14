@@ -855,6 +855,12 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PreprocessorDefinitions>NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="Dlss\XessD3D11.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PreprocessorDefinitions>NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClInclude Include="Dlss\XessD3D11.h" />
+    <ClInclude Include="Dlss\UpscalerDiagnostics.h" />
     <ClInclude Include="Dlss\DlssIntegration.h" />
     <ClInclude Include="Dlss\DlssD3D11.h" />
     <ClInclude Include="Dlss\DlssTemporal.h" />

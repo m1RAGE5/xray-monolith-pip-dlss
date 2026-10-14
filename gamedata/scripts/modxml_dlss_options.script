@@ -98,9 +98,15 @@ end
 local function add_options()
     local methods = content_for("r_upscaler", {
         {"off", "dlss_off"}, {"dlss", "upscaler_dlss"}, {"fsr3", "upscaler_fsr3"},
+        {"xess", "upscaler_xess"},
     })
     local fsr_modes = content_for("r_fsr3_quality", {
         {"native_aa", "fsr3_native_aa"}, {"quality", "dlss_quality"},
+        {"balanced", "dlss_balanced"}, {"performance", "dlss_performance"},
+        {"ultra_performance", "dlss_ultra_performance"},
+    })
+    local xess_modes = content_for("r_xess_quality", {
+        {"native_aa", "xess_native_aa"}, {"quality", "dlss_quality"},
         {"balanced", "dlss_balanced"}, {"performance", "dlss_performance"},
         {"ultra_performance", "dlss_ultra_performance"},
     })
@@ -116,7 +122,7 @@ local function add_options()
         {"l", "dlss_l"}, {"m", "dlss_m"},
     })
     if #modes == 0 or #presets == 0 then return end
-    local dual = #methods == 3 and #fsr_modes > 0
+    local dual = #methods >= 3 and #fsr_modes > 0
     if dual then
         -- Off belongs only to the method selector, not the quality selector.
         for i = #modes, 1, -1 do
@@ -161,6 +167,13 @@ local function add_options()
                             cmd = "r_fsr3_quality", content = fsr_modes, vid = true,
                             upscaler_method = "fsr3",
                         })
+                        if #xess_modes > 0 then
+                            table.insert(group.gr, position + 3, {
+                                id = "xess_mode", type = "list", val = 0,
+                                cmd = "r_xess_quality", content = xess_modes, vid = true,
+                                upscaler_method = "xess",
+                            })
+                        end
                     end
                     return
                 end

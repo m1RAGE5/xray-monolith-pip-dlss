@@ -35,6 +35,8 @@ public:
         float deltaMilliseconds = 0;
         std::uint64_t frame = 0;
         bool cameraCut = false;
+        // Consumed by the FSR 3 / XeSS backends; derived from the live projection.
+        float cameraNear = 0.1f, cameraFar = 1000.0f, verticalFov = 1.0f;
     };
     bool Evaluate(const Frame& frame);
     void ResetHistory() { m_history.Invalidate(); }
@@ -52,6 +54,7 @@ private:
     Microsoft::WRL::ComPtr<ID3DDeviceContextState> m_state;
     Microsoft::WRL::ComPtr<ID3D11Texture2D> m_output;
     Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_outputView;
+    Microsoft::WRL::ComPtr<ID3D11Device> m_outputDevice;
     NVSDK_NGX_Parameter* m_parameters = nullptr;
     NVSDK_NGX_Handle* m_feature = nullptr;
     Log m_log = nullptr;

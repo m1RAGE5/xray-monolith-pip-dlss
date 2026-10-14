@@ -1,9 +1,25 @@
 #include "Fsr3D3D11.h"
+#include "UpscalerDiagnostics.h"
 #include "../../../../sdk/FSR3/include/FidelityFX/host/backends/dx11/ffx_dx11.h"
 
 namespace fsr3
 {
 using Microsoft::WRL::ComPtr;
+
+static void LogEvaluationCamera(const D3D11Backend::Frame& frame, dlss::Size render,
+    ID3D11Texture2D* output, D3D11Backend::Log log, unsigned result = unsigned(E_INVALIDARG))
+{
+    if (!log) return;
+    dlss::LogEvaluationInputs(frame, render, output, log, result);
+    char message[256];
+    std::snprintf(message, sizeof(message),
+        "Evaluation camera: near=%.9g far=%.9g vertical_fov=%.9g; invalid_camera=%u",
+        double(frame.cameraNear), double(frame.cameraFar), double(frame.verticalFov),
+        unsigned(!std::isfinite(frame.cameraNear) || !std::isfinite(frame.cameraFar) ||
+            !std::isfinite(frame.verticalFov) || frame.cameraNear <= 0 || frame.cameraFar <= frame.cameraNear ||
+            frame.verticalFov <= 0 || frame.verticalFov >= 3.141593f));
+    log(message, result);
+}
 class ContextScope
 {
 public:
@@ -131,6 +147,7 @@ try
     output.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
     output.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
     hr = device->CreateTexture2D(&output, nullptr, &m_output);
+    if (SUCCEEDED(hr)) m_output->GetDevice(&m_outputDevice);
     if (FAILED(hr)) { if (m_log) m_log("FSR3 output allocation", hr); Destroy(); return false; }
     m_render = render; m_display = display;
     return true;
@@ -163,7 +180,9 @@ bool D3D11Backend::Validate(const Frame& frame) const
         input->GetDesc(&desc);
         ComPtr<ID3D11Device> device;
         input->GetDevice(&device);
-        if (device.Get() != m_device.Get() || desc.Width != m_render.width || desc.Height != m_render.height ||
+        // Proxy device wrappers (ReShade dxgi.dll) do not wrap textures, so
+        // inputs must be compared against the output texture's device.
+        if (device.Get() != m_outputDevice.Get() || desc.Width != m_render.width || desc.Height != m_render.height ||
             desc.SampleDesc.Count != 1 || desc.ArraySize != 1 || !(desc.BindFlags & D3D11_BIND_SHADER_RESOURCE)) return false;
     }
     D3D11_TEXTURE2D_DESC depth, motion;
@@ -179,6 +198,7 @@ try
     if (!Ready()) return false;
     if (!Validate(frame))
     {
+        LogEvaluationCamera(frame, m_render, m_output.Get(), m_log);
         if (m_log) m_log("Invalid FSR3 inputs; disabling until vid_restart", unsigned(E_INVALIDARG));
         m_failed = true; m_history.Invalidate(); return false;
     }
@@ -209,8 +229,14 @@ try
     ID3D11SamplerState* samplers[] = {m_samplers[0].Get(), m_samplers[1].Get()};
     m_context->CSSetSamplers(0, 2, samplers);
     const auto result = ffxFsr3UpscalerContextDispatch(m_fsr.get(), &dispatch);
-    if (!Check(result, "FSR3 evaluation failed; disabling until vid_restart"))
-    { m_failed = true; m_history.Invalidate(); return false; }
+    if (result != FFX_OK)
+    {
+        LogEvaluationCamera(frame, m_render, m_output.Get(), m_log, unsigned(result));
+        Check(result, "FSR3 evaluation failed; disabling until vid_restart");
+        m_failed = true;
+        m_history.Invalidate();
+        return false;
+    }
     m_history.Commit(frame.frame);
     return true;
 }
@@ -236,7 +262,7 @@ void D3D11Backend::Destroy()
     m_scratch.clear();
     for (auto& resource : m_shared) resource.Reset();
     for (auto& sampler : m_samplers) sampler.Reset();
-    m_output.Reset(); m_state.Reset(); m_context.Reset(); m_device.Reset();
+    m_output.Reset(); m_outputDevice.Reset(); m_state.Reset(); m_context.Reset(); m_device.Reset();
     m_render = m_display = {};
     m_history.Invalidate();
 }

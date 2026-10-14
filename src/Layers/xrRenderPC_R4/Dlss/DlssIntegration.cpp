@@ -2,6 +2,7 @@
 #include "DlssIntegration.h"
 #include "DlssD3D11.h"
 #include "Fsr3D3D11.h"
+#include "XessD3D11.h"
 #include "../../../xrEngine/igame_persistent.h"
 #include "../../../xrEngine/RendererError.h"
 
@@ -9,7 +10,8 @@ namespace
 {
 dlss::D3D11Backend backend;
 fsr3::D3D11Backend fsrBackend;
-bool useFsr = false;
+xess::D3D11Backend xessBackend;
+bool useFsr = false, useXess = false;
 Microsoft::WRL::ComPtr<ID3D11Texture2D> sceneDepth;
 Microsoft::WRL::ComPtr<ID3D11DepthStencilView> sceneDepthView;
 dlss::Size renderSize;
@@ -23,7 +25,7 @@ bool haveCamera = false;
 bool reportedEvaluation = false;
 string512 backendError = {};
 
-const char* Method() { return useFsr ? "FSR3" : "DLSS"; }
+const char* Method() { return useFsr ? "FSR3" : useXess ? "XeSS" : "DLSS"; }
 void LogBackendError(const char* method, const char* stage, unsigned result)
 {
     xr_sprintf(backendError, "%s (0x%08X)", stage, result);
@@ -34,6 +36,7 @@ void LogBackendError(const char* method, const char* stage, unsigned result)
 }
 void LogDlss(const char* stage, unsigned result) { LogBackendError("DLSS", stage, result); }
 void LogFsr(const char* stage, unsigned result) { LogBackendError("FSR3", stage, result); }
+void LogXess(const char* stage, unsigned result) { LogBackendError("XeSS", stage, result); }
 void ActivationFailed(const char* reason, const char* recovery)
 {
     string128 summary;
@@ -43,7 +46,7 @@ void ActivationFailed(const char* reason, const char* recovery)
     SetRendererError(summary, reason, recovery);
 }
 const char* BackendReason(const char* fallback) { return backendError[0] ? backendError : fallback; }
-void ResetHistory() { backend.ResetHistory(); fsrBackend.ResetHistory(); }
+void ResetHistory() { backend.ResetHistory(); fsrBackend.ResetHistory(); xessBackend.ResetHistory(); }
 }
 
 // The upscaler render size belongs to the MAIN viewport only; during an SVP pass
@@ -71,6 +74,7 @@ void InitializeTargets()
         return;
     }
     useFsr = ps_r_upscaler == 2;
+    useXess = ps_r_upscaler == 3;
     string_path marker;
     for (const char* shader : {"r3\\screenspace_mvectors.h", "r3\\dlss_contract.h", "r3\\dlss_ui_depth.ps",
         "r3\\dlss_copy.ps", "r3\\dlss_sharpen.ps", "r3\\dlss_cas.h"})
@@ -109,6 +113,24 @@ void InitializeTargets()
         {
             ActivationFailed(BackendReason("FSR 3 context creation failed."),
                 "FSR 3 requires Direct3D feature level 11.1. Check the console/log, then reapply or switch Upscaling Off.");
+            return;
+        }
+    }
+    else if (useXess)
+    {
+        // Release NGX as well when switching methods; XeSS does not require NVIDIA.
+        backend.Shutdown();
+        if (!xess::D3D11Backend::OptimalSize(ps_r_xess_quality, display, size))
+        {
+            ActivationFailed("Could not determine the XeSS render resolution.",
+                "Select a valid display resolution and XeSS quality, then Apply again.");
+            return;
+        }
+        if (!xessBackend.Create(HW.pDevice, ps_r_xess_quality, size, display, RImplementation.o.dx11_hdr10, LogXess))
+        {
+            ActivationFailed(BackendReason("Intel XeSS context creation failed."),
+                "XeSS requires an Intel GPU with a current driver, and libxess.dll plus libxess_dx11.dll beside the executable. "
+                "Check the console/log, then reapply or switch Upscaling Off.");
             return;
         }
     }
@@ -157,7 +179,7 @@ void InitializeTargets()
     if (SUCCEEDED(result)) result = HW.pDevice->CreateDepthStencilView(sceneDepth.Get(), &view, &sceneDepthView);
     if (FAILED(result))
     {
-        (useFsr ? LogFsr : LogDlss)("Scene depth allocation failed; retaining native resolution", result);
+        (useFsr ? LogFsr : useXess ? LogXess : LogDlss)("Scene depth allocation failed; retaining native resolution", result);
         ActivationFailed(backendError, "Check GPU memory/device errors in the console/log, then restart the game.");
         ReleaseTargets();
         return;
@@ -167,6 +189,9 @@ void InitializeTargets()
     if (useFsr)
         Msg("[FSR3] Initialized; awaiting first scene evaluation: quality=%u scene=%ux%u display=%ux%u",
             ps_r_fsr3_quality, size.width, size.height, display.width, display.height);
+    else if (useXess)
+        Msg("[XeSS] Initialized; awaiting first scene evaluation: quality=%u scene=%ux%u display=%ux%u",
+            ps_r_xess_quality, size.width, size.height, display.width, display.height);
     else
         Msg("[DLSS] Initialized; awaiting first scene evaluation: quality=%u requested preset=%u scene=%ux%u display=%ux%u",
             ps_r_dlss_quality, ps_r_dlss_preset, size.width, size.height, display.width, display.height);
@@ -182,22 +207,23 @@ void ReleaseTargets()
     previousJitter = {};
     backend.ReleaseFeature();
     fsrBackend.Destroy();
-    useFsr = false;
+    xessBackend.Destroy();
+    useFsr = useXess = false;
     sceneDepthView.Reset();
     sceneDepth.Reset();
     renderSize = {};
 }
 
-void ShutdownDevice() { ReleaseTargets(); backend.Shutdown(); }
+void ShutdownDevice() { ReleaseTargets(); backend.Shutdown(); xessBackend.Shutdown(); }
 unsigned RenderWidth() { return renderSize.Valid() ? renderSize.width : Device.dwWidth; }
 unsigned RenderHeight() { return renderSize.Valid() ? renderSize.height : Device.dwHeight; }
 bool Configured() { return configured; }
-bool Active() { return configured && inScene && mainView && (useFsr ? fsrBackend.Ready() : backend.Ready()); }
+bool Active() { return configured && inScene && mainView && (useFsr ? fsrBackend.Ready() : useXess ? xessBackend.Ready() : backend.Ready()); }
 Offset RasterJitter() { return rasterJitter; }
 Offset PreviousRasterJitter() { return previousJitter; }
 ID3DDepthStencilView* SceneDepth() { return inScene && configured ? sceneDepthView.Get() : HW.pBaseZB; }
 ID3D11Texture2D* SceneDepthTexture() { return sceneDepth.Get(); }
-ID3D11Texture2D* Output() { return useFsr ? fsrBackend.Output() : backend.Output(); }
+ID3D11Texture2D* Output() { return useFsr ? fsrBackend.Output() : useXess ? xessBackend.Output() : backend.Output(); }
 
 void BeginScene()
 {
@@ -251,7 +277,7 @@ bool Evaluate(ID3D11Texture2D* color, ID3D11Texture2D* motion)
     frame.cameraNear = -Device.mProject._43 / Device.mProject._33;
     frame.cameraFar = -Device.mProject._43 / (Device.mProject._33 - 1.0f);
     frame.verticalFov = 2.0f * atanf(1.0f / Device.mProject._22);
-    const bool success = useFsr ? fsrBackend.Evaluate(frame) : backend.Evaluate(frame);
+    const bool success = useFsr ? fsrBackend.Evaluate(frame) : useXess ? xessBackend.Evaluate(frame) : backend.Evaluate(frame);
     if (success && !reportedEvaluation)
     {
         SetRendererError(nullptr);

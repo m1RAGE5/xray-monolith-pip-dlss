@@ -1,5 +1,6 @@
 #include "DlssD3D11.h"
 #include "../../../../sdk/DLSS/include/nvsdk_ngx.h"
+#include "UpscalerDiagnostics.h"
 #include "../../../../sdk/DLSS/include/nvsdk_ngx_helpers.h"
 
 namespace dlss
@@ -122,6 +123,7 @@ bool D3D11Backend::Create(Quality quality, Size render, Size display, bool hdr, 
     desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
     HRESULT hr = m_device->CreateTexture2D(&desc, nullptr, &m_output);
     if (SUCCEEDED(hr)) hr = m_device->CreateShaderResourceView(m_output.Get(), nullptr, &m_outputView);
+    if (SUCCEEDED(hr)) m_output->GetDevice(&m_outputDevice);
     if (FAILED(hr))
     {
         if (m_log) m_log("DLSS output allocation", hr);
@@ -172,7 +174,9 @@ bool D3D11Backend::Validate(const Frame& frame) const
             desc.ArraySize != 1 || !(desc.BindFlags & D3D11_BIND_SHADER_RESOURCE)) return false;
         ComPtr<ID3D11Device> device;
         input->GetDevice(&device);
-        if (device.Get() != m_device.Get()) return false;
+        // Proxy device wrappers (ReShade dxgi.dll) do not wrap textures, so
+        // inputs must be compared against the output texture's device.
+        if (device.Get() != m_outputDevice.Get()) return false;
     }
     D3D11_TEXTURE2D_DESC depth, motion;
     frame.depth->GetDesc(&depth);
@@ -188,6 +192,7 @@ bool D3D11Backend::Evaluate(const Frame& frame)
     if (!Ready()) return false;
     if (!Validate(frame))
     {
+        LogEvaluationInputs(frame, m_render, m_output.Get(), m_log);
         if (m_log) m_log("Invalid DLSS input resources; disabling until render-target reset", unsigned(E_INVALIDARG));
         m_failed = true;
         m_history.Invalidate();
@@ -213,8 +218,10 @@ bool D3D11Backend::Evaluate(const Frame& frame)
     const auto result = NGX_D3D11_EVALUATE_DLSS_EXT(m_context.Get(), m_feature, m_parameters, &eval);
     m_context->ClearState();
     m_context->SwapDeviceContextState(previous.Get(), nullptr);
-    if (!Check(result, "DLSS evaluation failed; disabling until render-target reset"))
+    if (NVSDK_NGX_FAILED(result))
     {
+        LogEvaluationInputs(frame, m_render, m_output.Get(), m_log, unsigned(result));
+        Check(result, "DLSS evaluation failed; disabling until render-target reset");
         m_failed = true;
         m_history.Invalidate();
         return false;
@@ -229,6 +236,7 @@ void D3D11Backend::ReleaseFeature()
     m_feature = nullptr;
     m_outputView.Reset();
     m_output.Reset();
+    m_outputDevice.Reset();
     m_render = m_display = {};
     m_history.Invalidate();
     m_failed = false;

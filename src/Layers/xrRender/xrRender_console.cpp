@@ -13,7 +13,8 @@ u32 ps_r_dlss_quality = 0;
 // Its quality defaults to Off, so a fresh installation still renders natively.
 u32 ps_r_upscaler = 1;
 u32 ps_r_fsr3_quality = 1;
-xr_token upscaler_token[] = {{"off", 0}, {"dlss", 1}, {"fsr3", 2}, {nullptr, 0}};
+xr_token upscaler_token[] = {{"off", 0}, {"dlss", 1}, {"fsr3", 2}, {"xess", 3}, {nullptr, 0}};
+u32 ps_r_xess_quality = 1;
 xr_token fsr3_quality_token[] = {
     {"native_aa", 0}, {"quality", 1}, {"balanced", 2},
     {"performance", 3}, {"ultra_performance", 4}, {nullptr, 0}
@@ -1642,6 +1643,7 @@ void xrRender_initconsole()
 	CMD3(CCC_Token, "r_dlss_quality", &ps_r_dlss_quality, dlss_quality_token);
 	CMD3(CCC_Token, "r_upscaler", &ps_r_upscaler, upscaler_token);
 	CMD3(CCC_Token, "r_fsr3_quality", &ps_r_fsr3_quality, fsr3_quality_token);
+	CMD3(CCC_Token, "r_xess_quality", &ps_r_xess_quality, fsr3_quality_token);
 	CMD3(CCC_Token, "r_dlss_preset", &ps_r_dlss_preset, dlss_preset_token);
 	CMD4(CCC_Float, "r_dlss_sharpness", &ps_r_dlss_sharpness, 0.0f, 1.0f);
 	CMD4(CCC_Integer, "r__upscaler_jitter", &ps_r_upscaler_jitter, 0, 1);

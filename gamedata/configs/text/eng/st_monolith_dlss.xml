@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <string_table>
     <string id="ui_mm_video_basic_upscaler"><text>Temporal upscaler</text></string>
-    <string id="ui_mm_video_basic_upscaler_desc"><text>Select NVIDIA DLSS or AMD FSR 3 upscaling. Off retains the native renderer and its existing anti-aliasing settings. Both require MSAA off and the matching temporal shader override. Only the selected method runs; its quality setting is below. Apply restarts the renderer. No frame generation.</text></string>
+    <string id="ui_mm_video_basic_upscaler_desc"><text>Select NVIDIA DLSS, AMD FSR 3 or Intel XeSS upscaling. Off retains the native renderer and its existing anti-aliasing settings. Both require MSAA off and the matching temporal shader override. Only the selected method runs; its quality setting is below. Apply restarts the renderer. No frame generation.</text></string>
     <string id="ui_mm_video_basic_fsr3_mode"><text>AMD FSR 3 quality</text></string>
     <string id="ui_mm_video_basic_fsr3_mode_desc"><text>Used only when the temporal upscaler is FSR 3. Native AA uses native resolution; Quality, Balanced, Performance and Ultra Performance use 1.5x, 1.7x, 2x and 3x scaling respectively. Native DX11 FSR 3.1.2 upscaling, including non-AMD GPUs. No NVIDIA runtime required. Replaces SSS TAA and SMAA while active. Apply restarts the renderer.</text></string>
     <string id="ui_mm_video_basic_dlss_sharpness"><text>Upscaling sharpening (CAS)</text></string>
@@ -24,4 +24,8 @@
     <string id="ui_mm_lst_dlss_k"><text>K</text></string>
     <string id="ui_mm_lst_dlss_l"><text>L</text></string>
     <string id="ui_mm_lst_dlss_m"><text>M</text></string>
+    <string id="ui_mm_video_basic_xess_mode"><text>Intel XeSS quality</text></string>
+    <string id="ui_mm_video_basic_xess_mode_desc"><text>Used only when the temporal upscaler is XeSS. Intel XeSS 3 super resolution; the D3D11 path requires an Intel GPU (Arc/Xe) and a current driver. Put libxess.dll and libxess_dx11.dll beside the executable (see the xess-binaries archive in the release). Native AA uses native resolution; Quality, Balanced, Performance and Ultra Performance use 1.5x, 1.7x, 2x and 3x scaling respectively. Requires MSAA off. Replaces SSS TAA and SMAA while active. Apply restarts the renderer. No frame generation.</text></string>
+    <string id="ui_mm_lst_upscaler_xess"><text>Intel XeSS</text></string>
+    <string id="ui_mm_lst_xess_native_aa"><text>Native AA</text></string>
 </string_table>

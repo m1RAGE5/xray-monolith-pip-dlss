@@ -6,6 +6,7 @@
 extern ECORE_API u32 ps_r_dlss_quality;
 extern ECORE_API u32 ps_r_upscaler;
 extern ECORE_API u32 ps_r_fsr3_quality;
+extern ECORE_API u32 ps_r_xess_quality;
 extern ECORE_API u32 ps_r_dlss_preset;
 extern ECORE_API float ps_r_dlss_sharpness;
 // 0 disables the raster jitter for the temporal upscalers.
