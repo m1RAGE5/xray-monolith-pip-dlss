@@ -25,7 +25,7 @@
     <string id="ui_mm_lst_dlss_l"><text>L</text></string>
     <string id="ui_mm_lst_dlss_m"><text>M</text></string>
     <string id="ui_mm_video_basic_xess_mode"><text>Intel XeSS quality</text></string>
-    <string id="ui_mm_video_basic_xess_mode_desc"><text>Used only when the temporal upscaler is XeSS. Intel XeSS 3 super resolution; the D3D11 path requires an Intel GPU (Arc/Xe) and a current driver. Put libxess.dll and libxess_dx11.dll beside the executable (see the xess-binaries archive in the release). Native AA uses native resolution; Quality, Balanced, Performance and Ultra Performance use 1.5x, 1.7x, 2x and 3x scaling respectively. Requires MSAA off. Replaces SSS TAA and SMAA while active. Apply restarts the renderer. No frame generation.</text></string>
+    <string id="ui_mm_video_basic_xess_mode_desc"><text>Used only when the temporal upscaler is XeSS. Intel XeSS 3 super resolution; the D3D11 path requires an Intel GPU (Arc/Xe) and a current driver. Put libxess.dll and libxess_dx11.dll beside the executable. Requires MSAA off. Replaces SSS TAA and SMAA while active. Apply restarts the renderer. No frame generation.</text></string>
     <string id="ui_mm_lst_upscaler_xess"><text>Intel XeSS</text></string>
     <string id="ui_mm_lst_xess_native_aa"><text>Native AA</text></string>
 </string_table>

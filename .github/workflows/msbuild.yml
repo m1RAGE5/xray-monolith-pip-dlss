@@ -214,7 +214,7 @@ jobs:
         files: |
           *.zip
           pdb/*.zip
-          extras/kmack-fixes/bodycam-gamedata-kmack-fixes.zip
+          extras/kmack-fixes/bodycam-kmack-terminal-fix.zip
         overwrite_files: true
         tag_name: "${{steps.ver.outputs.tag}}"
         name: "${{steps.ver.outputs.version}} DLSS/FSR3 MT + Immersive Bodycam"
@@ -223,7 +223,7 @@ jobs:
           * X-Ray Monolith MT (upstream all-in-one-vs2022-wpo-mt, based on ${{steps.ver.outputs.version}}) with Shader Bus
           * **Immersive Bodycam** — true Picture-in-Picture weapon scopes plus bodycam-style weapon and camera movement, ported from [asuparabekon/xray-monolith-bodycam](https://github.com/asuparabekon/xray-monolith-bodycam/releases)
           * **Native DX11 DLSS / FSR 3.1 upscaling** (ported from [brodrigz/xray-monolith](https://github.com/brodrigz/xray-monolith/releases/tag/1.0.1) 1.0.1)
-          * **Intel XeSS 3 super resolution** (XeSS SDK 3.0.2; Intel GPUs only; libxess_dx11.dll is loaded at runtime, so the DLLs are optional)
+          * **Intel XeSS 3 super resolution** (XeSS SDK 3.0.2; Intel GPUs only)
 
           ## Build
           * DX11-AVX configuration
@@ -234,10 +234,9 @@ jobs:
           2. Put NVIDIA's release `nvngx_dlss.dll` (from [brodrigz modded binaries](https://github.com/brodrigz/xray-monolith/releases) or [NVIDIA/DLSS v310.9.1](https://github.com/NVIDIA/DLSS/releases/tag/v310.9.1)) beside `AnomalyDX11AVX.exe`. For Intel XeSS: extract `xess-binaries-pip.zip` beside the exe instead (Intel GPUs only; DLSS/FSR 3 work without these DLLs).
           3. Turn TAA & MSAA Off, select FSR 3 / DLSS / XeSS in Video settings, Apply.
 
-          ## bodycam-gamedata-kmack-fixes
-          Fix for the GAMMA **[Kmack] Maxim PDX and Optics** package (working PDX Terminal thermal imaging through PiP, scope reticle, 3x magnifier) — only needed for the **GAMMA + 3DSS + Kmack PDX** combo.
+          ## bodycam-kmack-terminal-fix
+          Fix for the GAMMA **[Kmack] Maxim PDX and Optics** package (only **GAMMA + 3DSS + Kmack PDX**).
           Enable it in MO2 **above** the `BODYCAM - PiP & 3DSS COMPATIBILITY PATCH` mod.
-          The zip also carries the Bodycam engine's gamedata contract; with this release it is already inside `00_modded_exes_gamedata.db0`, so that part is only required when installing the exe without the bundled gamedata.
         token: "${{ secrets.GITHUB_TOKEN }}"
 
     - name: Remove artifacts
